@@ -3,7 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Based Critical Action Analyzer</title>
+  <title>AI Critical Action Analyzer | Pose Analysis System</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}">
   
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -14,115 +15,353 @@
   <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.net.min.js"></script>
 </head>
 <body>
-  <div class="vanta-container" id="vanta-container"></div>
-
-  <div class="container">
-    <header>
-      <h1>AI Based Critical Action Analyzer</h1>
-      <p class="subtitle">Real-time pose analysis with interactive visualizations</p>
-    </header>
-
-    <div class="controls">
-      <button id="start-camera" class="btn btn-primary">Start Analysis</button>
-      <button id="stop-camera" class="btn btn-secondary">Stop Analysis</button>
-      <button id="reset-data" class="btn btn-secondary">Reset Data</button>
+  <!-- Navigation Header -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <div class="nav-logo">
+        <i class="fas fa-brain"></i>
+        <span>AI Action Analyzer</span>
+      </div>
+      <div class="nav-links">
+        <a href="#dashboard" class="nav-link">Dashboard</a>
+        <a href="#analysis" class="nav-link">Analysis</a>
+        <a href="#insights" class="nav-link">Insights</a>
+        <a href="#settings" class="nav-link">Settings</a>
+      </div>
     </div>
+  </nav>
 
-    <div class="main-content">
-      <div class="left-panel">
-        <div class="card">
-          <h2 class="card-title">Live Camera Feed</h2>
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="hero-content">
+      <h1>AI-Powered Critical Action Analysis</h1>
+      <p>Real-time pose estimation and movement analysis with advanced AI algorithms</p>
+    </div>
+    <div class="hero-visual">
+      <div class="visual-container">
+        <div class="pulse-ring"></div>
+        <i class="fas fa-running"></i>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Content -->
+  <main class="main-container">
+    <!-- Camera and Analysis Section -->
+    <section class="analysis-section">
+      <div class="section-header">
+        <h2>Live Analysis</h2>
+        <p>Real-time pose tracking and movement analysis</p>
+      </div>
+      
+      <div class="analysis-content">
+        <div class="camera-card">
+          <div class="card-header">
+            <h3>Live Camera Feed</h3>
+            <div class="camera-indicator">
+              <span class="indicator-dot"></span>
+              <span class="indicator-text" id="camera-status">Camera Off</span>
+            </div>
+          </div>
           <div class="camera-container">
-            <video class="input_video" autoplay></video>
+            <video class="input_video" autoplay muted></video>
             <canvas class="output_canvas"></canvas>
+            <div class="camera-overlay" id="camera-overlay">
+              <i class="fas fa-camera"></i>
+              <p>Camera feed inactive</p>
+            </div>
+          </div>
+          <div class="camera-controls">
+            <button id="start-camera" class="btn btn-primary">
+              <i class="fas fa-play"></i> Start Analysis
+            </button>
+            <button id="stop-camera" class="btn btn-secondary" disabled>
+              <i class="fas fa-stop"></i> Stop Analysis
+            </button>
+            <button id="reset-data" class="btn btn-outline">
+              <i class="fas fa-eraser"></i> Reset Data
+            </button>
           </div>
         </div>
-
-        <div class="card">
-          <h2 class="card-title">Key Metrics</h2>
-          <div class="metrics-grid">
-            <div class="metric-card">
-              <div class="metric-label">Posture Score</div>
-              <div class="metric-value" id="posture-score">0%</div>
+        
+        <div class="insights-card">
+          <div class="card-header">
+            <h3>Performance Insights</h3>
+            <div class="time-display" id="analysis-timer">00:00</div>
+          </div>
+          <div class="insights-content">
+            <div class="insight-item">
+              <div class="insight-icon">
+                <i class="fas fa-posture"></i>
+              </div>
+              <div class="insight-text">
+                <h4>Posture Analysis</h4>
+                <p id="posture-analysis">Start analysis to see results...</p>
+              </div>
             </div>
-            <div class="metric-card">
-              <div class="metric-label">Balance</div>
-              <div class="metric-value" id="balance-score">0%</div>
+            
+            <div class="insight-item">
+              <div class="insight-icon">
+                <i class="fas fa-running"></i>
+              </div>
+              <div class="insight-text">
+                <h4>Movement Quality</h4>
+                <p id="movement-analysis">Start analysis to see results...</p>
+              </div>
             </div>
-            <div class="metric-card">
-              <div class="metric-label">Symmetry</div>
-              <div class="metric-value" id="symmetry-score">0%</div>
-            </div>
-            <div class="metric-card">
-              <div class="metric-label">Motion Smoothness</div>
-              <div class="metric-value" id="smoothness-score">0%</div>
+            
+            <div class="insight-item">
+              <div class="insight-icon">
+                <i class="fas fa-lightbulb"></i>
+              </div>
+              <div class="insight-text">
+                <h4>Recommendations</h4>
+                <p id="recommendations">Start analysis to see recommendations...</p>
+              </div>
             </div>
           </div>
         </div>
       </div>
+    </section>
 
-      <div class="right-panel">
-        <div class="card">
-          <h2 class="card-title">Analysis Dashboard</h2>
-          <div class="tab-container">
-            <div class="tabs">
-              <div class="tab active" data-tab="charts">Charts</div>
-              <div class="tab" data-tab="landmarks">Landmark Data</div>
-              <div class="tab" data-tab="analysis">Detailed Analysis</div>
+    <!-- Stats Overview -->
+    <section class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">
+          <i class="fas fa-posture"></i>
+        </div>
+        <div class="stat-info">
+          <h3>Posture Score</h3>
+          <div class="stat-value" id="posture-score">0%</div>
+        </div>
+        <div class="stat-progress">
+          <div class="progress-bar">
+            <div class="progress-fill" id="posture-progress" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="stat-card">
+        <div class="stat-icon">
+          <i class="fas fa-balance-scale"></i>
+        </div>
+        <div class="stat-info">
+          <h3>Balance</h3>
+          <div class="stat-value" id="balance-score">0%</div>
+        </div>
+        <div class="stat-progress">
+          <div class="progress-bar">
+            <div class="progress-fill" id="balance-progress" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="stat-card">
+        <div class="stat-icon">
+          <i class="fas fa-project-diagram"></i>
+        </div>
+        <div class="stat-info">
+          <h3>Symmetry</h3>
+          <div class="stat-value" id="symmetry-score">0%</div>
+        </div>
+        <div class="stat-progress">
+          <div class="progress-bar">
+            <div class="progress-fill" id="symmetry-progress" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="stat-card">
+        <div class="stat-icon">
+          <i class="fas fa-wave-square"></i>
+        </div>
+        <div class="stat-info">
+          <h3>Motion Smoothness</h3>
+          <div class="stat-value" id="smoothness-score">0%</div>
+        </div>
+        <div class="stat-progress">
+          <div class="progress-bar">
+            <div class="progress-fill" id="smoothness-progress" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Visualization Tabs -->
+    <section class="visualization-section">
+      <div class="section-header">
+        <h2>Advanced Visualizations</h2>
+        <p>Detailed analysis through interactive charts and data</p>
+      </div>
+      
+      <div class="tabs-container">
+        <div class="tabs-header">
+          <div class="tab active" data-tab="charts">
+            <i class="fas fa-chart-line"></i> Charts
+          </div>
+          <div class="tab" data-tab="landmarks">
+            <i class="fas fa-map-marker-alt"></i> Landmark Data
+          </div>
+          <div class="tab" data-tab="analysis">
+            <i class="fas fa-microscope"></i> Detailed Analysis
+          </div>
+        </div>
+        
+        <div class="tabs-content">
+          <div class="tab-pane active" id="charts-tab">
+            <div class="charts-grid">
+              <div class="chart-container">
+                <div class="chart-header">
+                  <h4>Joint Angles Over Time</h4>
+                  <div class="chart-legend">
+                    <span class="legend-item left-knee"><i class="fas fa-circle"></i> Left Knee</span>
+                    <span class="legend-item right-knee"><i class="fas fa-circle"></i> Right Knee</span>
+                  </div>
+                </div>
+                <div class="chart-wrapper">
+                  <canvas id="angle-chart"></canvas>
+                </div>
+              </div>
+              
+              <div class="chart-container">
+                <div class="chart-header">
+                  <h4>Body Movement Intensity</h4>
+                  <div class="chart-legend">
+                    <span class="legend-item torso"><i class="fas fa-circle"></i> Torso</span>
+                    <span class="legend-item head"><i class="fas fa-circle"></i> Head</span>
+                  </div>
+                </div>
+                <div class="chart-wrapper">
+                  <canvas id="movement-chart"></canvas>
+                </div>
+              </div>
+              
+              <div class="chart-container">
+                <div class="chart-header">
+                  <h4>Velocity of Extremities</h4>
+                  <div class="chart-legend">
+                    <span class="legend-item hands"><i class="fas fa-circle"></i> Hands</span>
+                    <span class="legend-item feet"><i class="fas fa-circle"></i> Feet</span>
+                  </div>
+                </div>
+                <div class="chart-wrapper">
+                  <canvas id="velocity-chart"></canvas>
+                </div>
+              </div>
+              
+              <div class="chart-container">
+                <div class="chart-header">
+                  <h4>Balance Stability Score</h4>
+                  <div class="chart-legend">
+                    <span class="legend-item stability"><i class="fas fa-circle"></i> Stability</span>
+                  </div>
+                </div>
+                <div class="chart-wrapper">
+                  <canvas id="stability-chart"></canvas>
+                </div>
+              </div>
             </div>
-            <div class="tab-content">
-              <div class="tab-pane active" id="charts-tab">
-                <div class="charts-container">
-                  <div class="chart-wrapper">
-                    <canvas id="angle-chart"></canvas>
+          </div>
+          
+          <div class="tab-pane" id="landmarks-tab">
+            <div class="data-table-container">
+              <div class="table-header">
+                <h4>Pose Landmark Data</h4>
+                <div class="table-controls">
+                  <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="Search landmarks...">
                   </div>
-                  <div class="chart-wrapper">
-                    <canvas id="movement-chart"></canvas>
-                  </div>
-                  <div class="chart-wrapper">
-                    <canvas id="velocity-chart"></canvas>
-                  </div>
-                  <div class="chart-wrapper">
-                    <canvas id="stability-chart"></canvas>
-                  </div>
+                  <button class="btn btn-sm btn-outline">
+                    <i class="fas fa-download"></i> Export
+                  </button>
                 </div>
               </div>
-              <div class="tab-pane" id="landmarks-tab">
-                <div class="table-responsive">
-                  <table class="landmark-table">
-                    <thead>
-                      <tr>
-                        <th>Landmark</th>
-                        <th>X</th>
-                        <th>Y</th>
-                        <th>Z</th>
-                        <th>Visibility</th>
-                      </tr>
-                    </thead>
-                    <tbody id="landmark-data">
-                      <!-- Landmark data will be populated here -->
-                    </tbody>
-                  </table>
+              <div class="table-responsive">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Landmark</th>
+                      <th>X</th>
+                      <th>Y</th>
+                      <th>Z</th>
+                      <th>Visibility</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="landmark-data">
+                    <tr>
+                      <td colspan="6" class="no-data">Start analysis to see landmark data</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          
+          <div class="tab-pane" id="analysis-tab">
+            <div class="detailed-analysis">
+              <div class="analysis-column">
+                <h4>Movement Patterns</h4>
+                <div class="analysis-chart">
+                  <canvas id="pattern-chart"></canvas>
+                </div>
+                <div class="analysis-text">
+                  <p>Detailed analysis of movement patterns will appear here once analysis begins.</p>
                 </div>
               </div>
-              <div class="tab-pane" id="analysis-tab">
-                <div class="analysis-result">
-                  <h3>Posture Analysis</h3>
-                  <p id="posture-analysis">Start analysis to see results...</p>
-                  
-                  <h3>Movement Quality</h3>
-                  <p id="movement-analysis">Start analysis to see results...</p>
-                  
-                  <h3>Recommendations</h3>
-                  <p id="recommendations">Start analysis to see recommendations...</p>
+              
+              <div class="analysis-column">
+                <h4>Performance History</h4>
+                <div class="history-list">
+                  <div class="history-item">
+                    <div class="history-time">Today, 14:32</div>
+                    <div class="history-desc">Initial analysis started</div>
+                    <div class="history-score">72%</div>
+                  </div>
+                  <div class="history-item">
+                    <div class="history-time">Yesterday, 16:45</div>
+                    <div class="history-desc">Balance improvement detected</div>
+                    <div class="history-score">68%</div>
+                  </div>
+                  <div class="history-item">
+                    <div class="history-time">Oct 12, 10:15</div>
+                    <div class="history-desc">Symmetry analysis completed</div>
+                    <div class="history-score">65%</div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-content">
+      <div class="footer-section">
+        <h4>AI Critical Action Analyzer</h4>
+        <p>Advanced pose estimation and movement analysis powered by AI</p>
+      </div>
+      <div class="footer-section">
+        <h4>Resources</h4>
+        <a href="#">Documentation</a>
+        <a href="#">API Reference</a>
+        <a href="#">Tutorials</a>
+      </div>
+      <div class="footer-section">
+        <h4>Connect</h4>
+        <a href="#"><i class="fab fa-github"></i> GitHub</a>
+        <a href="#"><i class="fab fa-twitter"></i> Twitter</a>
+        <a href="#"><i class="fab fa-linkedin"></i> LinkedIn</a>
       </div>
     </div>
-  </div>
+    <div class="footer-bottom">
+      <p>&copy; 2023 AI Critical Action Analyzer. All rights reserved.</p>
+    </div>
+  </footer>
 
   <script type="module" src="{{ url_for('static', filename='js/action.js') }}"></script>
 </body>
