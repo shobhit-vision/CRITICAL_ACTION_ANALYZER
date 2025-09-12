@@ -1,19 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
 <head>
-    <title>{{ title }}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Based Critical Action Analyzer</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}">
+  
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.1/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.2/drawing_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.2/pose.js" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.net.min.js"></script>
 
+
+</head>
 <body>
-    <div class="App">
-        <header class="App-header">
-            <img src="{{ url_for('static', filename='Octocat.png') }}" class="App-logo" alt="logo" />
-            <p>
-                GitHub Codespaces <span class="heart">♥️</span> Flask
-            </p>
-            <p class="small">
-                Edit <code>templates/index.html</code> and refresh to see your changes!
-            </p>
-        </header>
-    </div>
-</body>
+  <div class="vanta-container" id="vanta-container"></div>
 
+  <div class="container">
+    <header>
+      <h1>AI Based Critical Action Analyzer</h1>
+      <p class="subtitle">Real-time pose analysis with interactive visualizations</p>
+    </header>
+
+    <div class="controls">
+      <button id="start-camera" class="btn btn-primary">Start Analysis</button>
+      <button id="stop-camera" class="btn btn-secondary">Stop Analysis</button>
+      <button id="reset-data" class="btn btn-secondary">Reset Data</button>
+    </div>
+
+    <div class="main-content">
+      <div class="left-panel">
+        <div class="card">
+          <h2 class="card-title">Live Camera Feed</h2>
+          <div class="camera-container">
+            <video class="input_video" autoplay></video>
+            <canvas class="output_canvas"></canvas>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2 class="card-title">Key Metrics</h2>
+          <div class="metrics-grid">
+            <div class="metric-card">
+              <div class="metric-label">Posture Score</div>
+              <div class="metric-value" id="posture-score">0%</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">Balance</div>
+              <div class="metric-value" id="balance-score">0%</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">Symmetry</div>
+              <div class="metric-value" id="symmetry-score">0%</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">Motion Smoothness</div>
+              <div class="metric-value" id="smoothness-score">0%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="right-panel">
+        <div class="card">
+          <h2 class="card-title">Analysis Dashboard</h2>
+          <div class="tab-container">
+            <div class="tabs">
+              <div class="tab active" data-tab="charts">Charts</div>
+              <div class="tab" data-tab="landmarks">Landmark Data</div>
+              <div class="tab" data-tab="analysis">Detailed Analysis</div>
+            </div>
+            <div class="tab-content">
+              <div class="tab-pane active" id="charts-tab">
+                <div class="charts-container">
+                  <div class="chart-wrapper">
+                    <canvas id="angle-chart"></canvas>
+                  </div>
+                  <div class="chart-wrapper">
+                    <canvas id="movement-chart"></canvas>
+                  </div>
+                  <div class="chart-wrapper">
+                    <canvas id="velocity-chart"></canvas>
+                  </div>
+                  <div class="chart-wrapper">
+                    <canvas id="stability-chart"></canvas>
+                  </div>
+                </div>
+              </div>
+              <div class="tab-pane" id="landmarks-tab">
+                <div class="table-responsive">
+                  <table class="landmark-table">
+                    <thead>
+                      <tr>
+                        <th>Landmark</th>
+                        <th>X</th>
+                        <th>Y</th>
+                        <th>Z</th>
+                        <th>Visibility</th>
+                      </tr>
+                    </thead>
+                    <tbody id="landmark-data">
+                      <!-- Landmark data will be populated here -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="tab-pane" id="analysis-tab">
+                <div class="analysis-result">
+                  <h3>Posture Analysis</h3>
+                  <p id="posture-analysis">Start analysis to see results...</p>
+                  
+                  <h3>Movement Quality</h3>
+                  <p id="movement-analysis">Start analysis to see results...</p>
+                  
+                  <h3>Recommendations</h3>
+                  <p id="recommendations">Start analysis to see recommendations...</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Global variables
+    let poseHistory = [];
+    const MAX_HISTORY = 100;
+    let charts = {};
+    let analysisInterval;
+    let camera = null;
+    let isCameraRunning = false;
+    
+    // Initialize Vanta.js background
+    VANTA.NET({
+      el: "#vanta-container",
+      mouseControls: true,
+      touchControls: true,
+      gyroControls: false,
+      minHeight: 100.00,
+      minWidth: 100.00,
+      scale: 1.00,
+      scaleMobile: 1.00,
+      color: 0x4a6bff,
+      backgroundColor: 0xf8f9fa
+    });
+
+    // DOM elements
+    const videoElement = document.querySelector('.input_video');
+    const canvasElement = document.querySelector('.output_canvas');
+    const canvasCtx = canvasElement.getContext('2d');
+    const startButton = document.getElementById('start-camera');
+    const stopButton = document.getElementById('stop-camera');
+    const resetButton = document.getElementById('reset-data');
+    const tabs = document.querySelectorAll('.tab');
+    const tabPanes = document.querySelectorAll('.tab-pane');
+
+    // Set canvas dimensions
+    function onResize() {
+      canvasElement.width = videoElement.videoWidth;
+      canvasElement.height = videoElement.videoHeight;
+    }
+
+    // Initialize Charts
+    function initializeCharts() {
+      const angleCtx = document.getElementById('angle-chart').getContext('2d');
+      charts.angle = new Chart(angleCtx, {
+        type: 'line',
+        data: {
+          labels: Array(MAX_HISTORY).fill(''),
+          datasets: [
+            {
+              label: 'Left Knee Angle',
+              data: [],
+              borderColor: 'rgb(255, 99, 132)',
+              tension: 0.1,
+              borderWidth: 2
+            },
+            {
+              label: 'Right Knee Angle',
+              data: [],
+              borderColor: 'rgb(54, 162, 235)',
+              tension: 0.1,
+              borderWidth: 2
+            },
+            {
+              label: 'Left Elbow Angle',
+              data: [],
+              borderColor: 'rgb(255, 205, 86)',
+              tension: 0.1,
+              borderWidth: 2
+            },
+            {
+              label: 'Right Elbow Angle',
+              data: [],
+              borderColor: 'rgb(75, 192, 192)',
+              tension: 0.1,
+              borderWidth: 2
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            title: {
+              display: true,
+              text: 'Joint Angles Over Time'
+            },
+            legend: {
+              position: 'top',
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 180,
+              title: {
+                display: true,
+                text: 'Angle (degrees)'
+              }
+            }
+          }
+        }
+      });
+
+      const movementCtx = document.getElementById('movement-chart').getContext('2d');
+      charts.movement = new Chart(movementCtx, {
+        type: 'line',
+        data: {
+          labels: Array(MAX_HISTORY).fill(''),
+          datasets: [
+            {
+              label: 'Torso Movement',
+              data: [],
+              borderColor: 'rgb(153, 102, 255)',
+              tension: 0.1,
+              borderWidth: 2
+            },
+            {
+              label: 'Head Movement',
+              data: [],
+              borderColor: 'rgb(255, 159, 64)',
+              tension: 0.1,
+              borderWidth: 2
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            title: {
+              display: true,
+              text: 'Body Movement Intensity'
+            },
+            legend: {
+              position: 'top',
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: 'Movement Intensity'
+              }
+            }
+          }
+        }
+      });
+
+      const velocityCtx = document.getElementById('velocity-chart').getContext('2d');
+      charts.velocity = new Chart(velocityCtx, {
+        type: 'line',
+        data: {
+          labels: Array(MAX_HISTORY).fill(''),
+          datasets: [
+            {
+              label: 'Hand Velocity',
+              data: [],
+              borderColor: 'rgb(255, 99, 132)',
+              tension: 0.1,
+              borderWidth: 2
+            },
+            {
+              label: 'Feet Velocity',
+              data: [],
+              borderColor: 'rgb(54, 162, 235)',
+              tension: 0.1,
+              borderWidth: 2
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            title: {
+              display: true,
+              text: 'Velocity of Extremities'
+            },
+            legend: {
+              position: 'top',
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: 'Velocity'
+              }
+            }
+          }
+        }
+      });
+
+      const stabilityCtx = document.getElementById('stability-chart').getContext('2d');
+      charts.stability = new Chart(stabilityCtx, {
+        type: 'line',
+        data: {
+          labels: Array(MAX_HISTORY).fill(''),
+          datasets: [
+            {
+              label: 'Balance Stability',
+              data: [],
+              borderColor: 'rgb(75, 192, 192)',
+              tension: 0.1,
+              borderWidth: 2,
+              fill: true
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            title: {
+              display: true,
+              text: 'Balance Stability Score'
+            },
+            legend: {
+              position: 'top',
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 100,
+              title: {
+                display: true,
+                text: 'Stability (%)'
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // Calculate angle between three points
+    function calculateAngle(a, b, c) {
+      const radians = Math.atan2(c.y - b.y, c.x - b.x) - Math.atan2(a.y - b.y, a.x - b.x);
+      let angle = Math.abs(radians * 180.0 / Math.PI);
+      if (angle > 180.0) angle = 360 - angle;
+      return angle;
+    }
+
+    // Calculate distance between two points
+    function calculateDistance(a, b) {
+      return Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2));
+    }
+
+    // Analyze pose and extract metrics
+    function analyzePose(landmarks) {
+      if (!landmarks) return null;
+      
+      // Calculate key angles
+      const leftElbowAngle = calculateAngle(
+        landmarks[11], landmarks[13], landmarks[15] // shoulder, elbow, wrist
+      );
+      
+      const rightElbowAngle = calculateAngle(
+        landmarks[12], landmarks[14], landmarks[16] // shoulder, elbow, wrist
+      );
+      
+      const leftKneeAngle = calculateAngle(
+        landmarks[23], landmarks[25], landmarks[27] // hip, knee, ankle
+      );
+      
+      const rightKneeAngle = calculateAngle(
+        landmarks[24], landmarks[26], landmarks[28] // hip, knee, ankle
+      );
+      
+      // Calculate symmetry (comparing left and right sides)
+      const symmetryScore = 100 - Math.abs(leftElbowAngle - rightElbowAngle) / 180 * 100;
+      
+      // Calculate torso movement (distance between shoulders and hips)
+      const shoulderWidth = calculateDistance(landmarks[11], landmarks[12]);
+      const hipWidth = calculateDistance(landmarks[23], landmarks[24]);
+      const torsoStability = 100 - Math.abs(shoulderWidth - hipWidth) / shoulderWidth * 100;
+      
+      // Calculate balance (center of mass between feet)
+      const leftAnkle = landmarks[27];
+      const rightAnkle = landmarks[28];
+      const midHip = {
+        x: (landmarks[23].x + landmarks[24].x) / 2,
+        y: (landmarks[23].y + landmarks[24].y) / 2
+      };
+      
+      const balanceScore = 100 - Math.abs(
+        (midHip.x - (leftAnkle.x + rightAnkle.x) / 2) / shoulderWidth * 100
+      );
+      
+      return {
+        angles: {
+          leftElbow: leftElbowAngle,
+          rightElbow: rightElbowAngle,
+          leftKnee: leftKneeAngle,
+          rightKnee: rightKneeAngle
+        },
+        symmetry: Math.max(0, Math.min(100, symmetryScore)),
+        torsoStability: Math.max(0, Math.min(100, torsoStability)),
+        balance: Math.max(0, Math.min(100, balanceScore)),
+        timestamp: Date.now()
+      };
+    }
+
+    // Update charts with new data
+    function updateCharts(analysis) {
+      if (!analysis) return;
+      
+      // Update angle chart
+      charts.angle.data.datasets[0].data.push(analysis.angles.leftKnee);
+      charts.angle.data.datasets[1].data.push(analysis.angles.rightKnee);
+      charts.angle.data.datasets[2].data.push(analysis.angles.leftElbow);
+      charts.angle.data.datasets[3].data.push(analysis.angles.rightElbow);
+      
+      // Update movement chart (simplified for demo)
+      charts.movement.data.datasets[0].data.push(100 - analysis.torsoStability);
+      charts.movement.data.datasets[1].data.push(100 - analysis.balance);
+      
+      // Update velocity chart (simplified for demo)
+      if (poseHistory.length > 1) {
+        const prevAnalysis = poseHistory[poseHistory.length - 2];
+        const timeDiff = (analysis.timestamp - prevAnalysis.timestamp) / 1000;
+        
+        // Simplified velocity calculation
+        const handVelocity = Math.abs(analysis.angles.leftElbow - prevAnalysis.angles.leftElbow) / timeDiff;
+        const feetVelocity = Math.abs(analysis.angles.leftKnee - prevAnalysis.angles.leftKnee) / timeDiff;
+        
+        charts.velocity.data.datasets[0].data.push(handVelocity);
+        charts.velocity.data.datasets[1].data.push(feetVelocity);
+      } else {
+        charts.velocity.data.datasets[0].data.push(0);
+        charts.velocity.data.datasets[1].data.push(0);
+      }
+      
+      // Update stability chart
+      charts.stability.data.datasets[0].data.push(analysis.balance);
+      
+      // Limit data to max history
+      Object.values(charts).forEach(chart => {
+        chart.data.datasets.forEach(dataset => {
+          if (dataset.data.length > MAX_HISTORY) {
+            dataset.data.shift();
+          }
+        });
+      });
+      
+      // Update charts
+      Object.values(charts).forEach(chart => chart.update('none'));
+    }
+
+    // Update metrics display
+    function updateMetrics(analysis) {
+      if (!analysis) return;
+      
+      document.getElementById('posture-score').textContent = Math.round(analysis.torsoStability) + '%';
+      document.getElementById('balance-score').textContent = Math.round(analysis.balance) + '%';
+      document.getElementById('symmetry-score').textContent = Math.round(analysis.symmetry) + '%';
+      
+      // Calculate smoothness (simplified)
+      if (poseHistory.length > 5) {
+        const recentAngles = poseHistory.slice(-5).map(a => a.angles.leftElbow);
+        const differences = [];
+        for (let i = 1; i < recentAngles.length; i++) {
+          differences.push(Math.abs(recentAngles[i] - recentAngles[i-1]));
+        }
+        const avgDifference = differences.reduce((a, b) => a + b, 0) / differences.length;
+        const smoothness = Math.max(0, 100 - avgDifference * 2);
+        document.getElementById('smoothness-score').textContent = Math.round(smoothness) + '%';
+      }
+    }
+
+    // Update landmark table
+    function updateLandmarkTable(landmarks) {
+      if (!landmarks) return;
+      
+      const tableBody = document.getElementById('landmark-data');
+      tableBody.innerHTML = '';
+      
+      // Show key landmarks only for performance
+      const keyLandmarks = [0, 11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28];
+      
+      keyLandmarks.forEach(index => {
+        const landmark = landmarks[index];
+        const row = document.createElement('tr');
+        
+        row.innerHTML = `
+          <td>${index}</td>
+          <td>${landmark.x.toFixed(4)}</td>
+          <td>${landmark.y.toFixed(4)}</td>
+          <td>${landmark.z ? landmark.z.toFixed(4) : 'N/A'}</td>
+          <td>${landmark.visibility ? landmark.visibility.toFixed(2) : 'N/A'}</td>
+        `;
+        
+        tableBody.appendChild(row);
+      });
+    }
+
+    // Generate analysis insights
+    function generateInsights() {
+      if (poseHistory.length < 10) return;
+      
+      const recentAnalyses = poseHistory.slice(-10);
+      const avgSymmetry = recentAnalyses.reduce((sum, a) => sum + a.symmetry, 0) / recentAnalyses.length;
+      const avgBalance = recentAnalyses.reduce((sum, a) => sum + a.balance, 0) / recentAnalyses.length;
+      const avgTorsoStability = recentAnalyses.reduce((sum, a) => sum + a.torsoStability, 0) / recentAnalyses.length;
+      
+      // Posture analysis
+      let postureAnalysis = '';
+      if (avgTorsoStability > 80) {
+        postureAnalysis = 'Your posture is excellent! You maintain a stable and aligned torso position.';
+      } else if (avgTorsoStability > 60) {
+        postureAnalysis = 'Your posture is good but could be improved. Try to keep your shoulders back and avoid slouching.';
+      } else {
+        postureAnalysis = 'Your posture needs attention. Focus on aligning your ears, shoulders, and hips. Consider exercises to strengthen your core.';
+      }
+      
+      // Movement analysis
+      let movementAnalysis = '';
+      if (avgSymmetry > 85) {
+        movementAnalysis = 'Your movements show good symmetry between left and right sides.';
+      } else if (avgSymmetry > 70) {
+        movementAnalysis = 'Your movements show moderate symmetry. Try to balance effort between both sides of your body.';
+      } else {
+        movementAnalysis = 'Your movements show significant asymmetry. This may lead to muscle imbalances over time.';
+      }
+      
+      // Recommendations
+      let recommendations = '';
+      if (avgBalance < 70) {
+        recommendations += '• Practice balance exercises like standing on one leg.<br>';
+      }
+      if (avgSymmetry < 75) {
+        recommendations += '• Incorporate unilateral exercises to address imbalances.<br>';
+      }
+      if (avgTorsoStability < 70) {
+        recommendations += '• Focus on core strengthening exercises like planks and bird-dogs.<br>';
+      }
+      
+      if (!recommendations) {
+        recommendations = 'Keep up the good work! Your movement quality is generally good.';
+      }
+      
+      // Update DOM
+      document.getElementById('posture-analysis').innerHTML = postureAnalysis;
+      document.getElementById('movement-analysis').innerHTML = movementAnalysis;
+      document.getElementById('recommendations').innerHTML = recommendations;
+    }
+
+    // Process pose results
+    function onResultsPose(results) {
+      canvasCtx.save();
+      canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+      canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+      
+      if (results.poseLandmarks) {
+        // Draw landmarks and connections
+        window.drawConnectors(canvasCtx, results.poseLandmarks, window.POSE_CONNECTIONS, {
+          color: '#00FF00',
+          lineWidth: 2
+        });
+        window.drawLandmarks(canvasCtx, results.poseLandmarks, {
+          color: '#FF0000',
+          lineWidth: 1,
+          radius: 2
+        });
+        
+        // Analyze pose
+        const analysis = analyzePose(results.poseLandmarks);
+        if (analysis) {
+          poseHistory.push(analysis);
+          if (poseHistory.length > MAX_HISTORY) {
+            poseHistory.shift();
+          }
+          
+          updateCharts(analysis);
+          updateMetrics(analysis);
+          updateLandmarkTable(results.poseLandmarks);
+        }
+      }
+      
+      canvasCtx.restore();
+    }
+
+    // Initialize MediaPipe Pose
+    const pose = new window.Pose({
+      locateFile: (file) => {
+        return `https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.2/${file}`;
+      }
+    });
+
+    pose.setOptions({
+      modelComplexity: 1,
+      smoothLandmarks: true,
+      enableSegmentation: false,
+      smoothSegmentation: false,
+      minDetectionConfidence: 0.5,
+      minTrackingConfidence: 0.5
+    });
+
+    pose.onResults(onResultsPose);
+
+    // Start camera function
+    function startCamera() {
+      if (isCameraRunning) return;
+      
+      // Get user media
+      navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => {
+          videoElement.srcObject = stream;
+          isCameraRunning = true;
+          
+          // Set up camera utils
+          camera = new window.Camera(videoElement, {
+            onFrame: async () => {
+              await pose.send({image: videoElement});
+            },
+            width: 640,
+            height: 480
+          });
+          
+          camera.start();
+          startButton.disabled = true;
+          stopButton.disabled = false;
+          
+          // Start periodic analysis
+          analysisInterval = setInterval(generateInsights, 3000);
+        })
+        .catch(err => {
+          console.error("Error accessing camera: ", err);
+          alert("Cannot access camera: " + err.message);
+        });
+    }
+
+    // Stop camera function
+    function stopCamera() {
+      if (!isCameraRunning) return;
+      
+      // Stop the camera stream
+      if (videoElement.srcObject) {
+        videoElement.srcObject.getTracks().forEach(track => track.stop());
+        videoElement.srcObject = null;
+      }
+      
+      isCameraRunning = false;
+      startButton.disabled = false;
+      stopButton.disabled = true;
+      
+      // Clear analysis interval
+      if (analysisInterval) {
+        clearInterval(analysisInterval);
+        analysisInterval = null;
+      }
+    }
+
+    // Event listeners
+    startButton.addEventListener('click', startCamera);
+    stopButton.addEventListener('click', stopCamera);
+
+    resetButton.addEventListener('click', () => {
+      poseHistory = [];
+      
+      // Reset charts
+      Object.values(charts).forEach(chart => {
+        chart.data.datasets.forEach(dataset => {
+          dataset.data = [];
+        });
+        chart.update();
+      });
+      
+      // Reset metrics
+      document.getElementById('posture-score').textContent = '0%';
+      document.getElementById('balance-score').textContent = '0%';
+      document.getElementById('symmetry-score').textContent = '0%';
+      document.getElementById('smoothness-score').textContent = '0%';
+      
+      // Reset analysis text
+      document.getElementById('posture-analysis').textContent = 'Start analysis to see results...';
+      document.getElementById('movement-analysis').textContent = 'Start analysis to see results...';
+      document.getElementById('recommendations').textContent = 'Start analysis to see recommendations...';
+      
+      // Clear landmark table
+      document.getElementById('landmark-data').innerHTML = '';
+    });
+
+    // Tab functionality
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const tabId = tab.getAttribute('data-tab');
+        
+        // Update active tab
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        
+        // Show active tab pane
+        tabPanes.forEach(pane => pane.classList.remove('active'));
+        document.getElementById(`${tabId}-tab`).classList.add('active');
+      });
+    });
+
+    // Initialize on load
+    window.addEventListener('load', () => {
+      initializeCharts();
+      stopButton.disabled = true;
+      
+      // Set initial canvas size
+      setTimeout(onResize, 100);
+    });
+
+    // Handle window resize
+    window.addEventListener('resize', onResize);
+  </script>
+</body>
 </html>
