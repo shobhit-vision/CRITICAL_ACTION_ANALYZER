@@ -105,6 +105,8 @@ body {
   background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  -moz-background-clip: text;
+  background-clip: text; /* Standard property */
 }
 
 .hero-content p {
@@ -817,4 +819,27 @@ body {
 .camera-active .camera-overlay {
   opacity: 0;
   pointer-events: none;
+}
+
+
+.status-badge {
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.status-high {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.status-medium {
+  background-color: #FFC107;
+  color: black;
+}
+
+.status-low {
+  background-color: #F44336;
+  color: white;
 }

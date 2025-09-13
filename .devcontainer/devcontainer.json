@@ -18,7 +18,8 @@
   "customizations": {
     "codespaces": {
       "openFiles": [
-        "templates/index.html"
+        "templates/index.html",
+        "templates/dashboard.html"
       ]
     },
     "vscode": {
