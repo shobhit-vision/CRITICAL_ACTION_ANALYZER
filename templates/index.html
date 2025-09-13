@@ -23,24 +23,37 @@
         <span>AI Action Analyzer</span>
       </div>
       <div class="nav-links">
-        <a href="#home" class="nav-link">Home</a>
-        <a href="#dashboard" class="nav-link">Dashboard</a>
-        <a href="#analysis" class="nav-link">Analysis</a>
+        <a href="home" class="nav-link active">Home</a>
+        <a href="dashboard" class="nav-link">Dashboard</a>
+        <a href="analysis" class="nav-link">Analysis</a>
         <a href="#insights" class="nav-link">Insights</a>
         <a href="#settings" class="nav-link">Settings</a>
+      </div>
+      <div class="mobile-menu-btn">
+        <i class="fas fa-bars"></i>
       </div>
     </div>
   </nav>
 
   <!-- Hero Section -->
-  <section class="hero">
+  <section class="hero" id="home">
     <div class="hero-content">
       <h1>AI-Powered Critical Action Analysis</h1>
-      <p>Real-time pose estimation and movement analysis with advanced AI algorithms</p>
+      <p>Advanced real-time pose estimation and biomechanical analysis with deep learning algorithms</p>
+      <div class="hero-actions">
+        <button class="btn btn-primary" id="hero-analysis-btn">
+          <i class="fas fa-play-circle"></i> Start Analysis
+        </button>
+        <button class="btn btn-outline">
+          <i class="fas fa-book"></i> View Documentation
+        </button>
+      </div>
     </div>
     <div class="hero-visual">
       <div class="visual-container">
         <div class="pulse-ring"></div>
+        <div class="pulse-ring delay-1"></div>
+        <div class="pulse-ring delay-2"></div>
         <i class="fas fa-running"></i>
       </div>
     </div>
@@ -49,14 +62,14 @@
   <!-- Main Content -->
   <main class="main-container">
     <!-- Camera and Analysis Section -->
-    <section class="analysis-section">
+    <section class="analysis-section" id="analysis">
       <div class="section-header">
         <h2>Live Analysis</h2>
-        <p>Real-time pose tracking and movement analysis</p>
+        <p>Real-time pose tracking and movement analysis with AI-powered insights</p>
       </div>
       
       <div class="analysis-content">
-        <div class="camera-card">
+        <div class="camera-card glass-card">
           <div class="card-header">
             <h3>Live Camera Feed</h3>
             <div class="camera-indicator">
@@ -65,11 +78,12 @@
             </div>
           </div>
           <div class="camera-container">
-            <video class="input_video" autoplay muted></video>
+            <video class="input_video" autoplay muted playsinline></video>
             <canvas class="output_canvas"></canvas>
             <div class="camera-overlay" id="camera-overlay">
               <i class="fas fa-camera"></i>
               <p>Camera feed inactive</p>
+              <button class="btn btn-sm btn-primary mt-2" id="overlay-start-btn">Enable Camera</button>
             </div>
           </div>
           <div class="camera-controls">
@@ -79,45 +93,52 @@
             <button id="stop-camera" class="btn btn-secondary" disabled>
               <i class="fas fa-stop"></i> Stop Analysis
             </button>
+            <button id="capture-frame" class="btn btn-outline" disabled>
+              <i class="fas fa-camera"></i> Capture Frame
+            </button>
             <button id="reset-data" class="btn btn-outline">
               <i class="fas fa-eraser"></i> Reset Data
             </button>
           </div>
         </div>
         
-        <div class="insights-card">
+        <!-- Skeleton Visualization Card -->
+        <div class="skeleton-card glass-card">
           <div class="card-header">
-            <h3>Performance Insights</h3>
-            <div class="time-display" id="analysis-timer">00:00</div>
+            <h3>3D Pose Visualization</h3>
+            <div class="skeleton-indicator">
+              <span class="indicator-dot" id="skeleton-status"></span>
+              <span class="indicator-text">Tracking</span>
+            </div>
           </div>
-          <div class="insights-content">
-            <div class="insight-item">
-              <div class="insight-icon">
-                <i class="fas fa-posture"></i>
-              </div>
-              <div class="insight-text">
-                <h4>Posture Analysis</h4>
-                <p id="posture-analysis">Start analysis to see results...</p>
-              </div>
+          <div class="skeleton-container">
+            <canvas id="skeleton-canvas"></canvas>
+            <div class="skeleton-overlay" id="skeleton-overlay">
+              <i class="fas fa-user"></i>
+              <p>Waiting for pose data...</p>
             </div>
-            
-            <div class="insight-item">
-              <div class="insight-icon">
-                <i class="fas fa-running"></i>
+          </div>
+          <div class="skeleton-controls">
+            <button class="btn btn-sm btn-outline" id="rotate-view">
+              <i class="fas fa-sync"></i> Rotate View
+            </button>
+            <button class="btn btn-sm btn-outline" id="toggle-3d">
+              <i class="fas fa-cube"></i> 3D View
+            </button>
+          </div>
+          <div class="skeleton-info">
+            <div class="skeleton-stats">
+              <div class="stat">
+                <span class="stat-label">Landmarks Detected</span>
+                <span class="stat-value" id="landmarks-count">0</span>
               </div>
-              <div class="insight-text">
-                <h4>Movement Quality</h4>
-                <p id="movement-analysis">Start analysis to see results...</p>
+              <div class="stat">
+                <span class="stat-label">Confidence</span>
+                <span class="stat-value" id="confidence-score">0%</span>
               </div>
-            </div>
-            
-            <div class="insight-item">
-              <div class="insight-icon">
-                <i class="fas fa-lightbulb"></i>
-              </div>
-              <div class="insight-text">
-                <h4>Recommendations</h4>
-                <p id="recommendations">Start analysis to see recommendations...</p>
+              <div class="stat">
+                <span class="stat-label">Frame Rate</span>
+                <span class="stat-value" id="frame-rate">0 FPS</span>
               </div>
             </div>
           </div>
@@ -125,214 +146,87 @@
       </div>
     </section>
 
-    <!-- Stats Overview -->
-    <section class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-icon">
-          <i class="fas fa-posture"></i>
-        </div>
-        <div class="stat-info">
-          <h3>Posture Score</h3>
-          <div class="stat-value" id="posture-score">0%</div>
-        </div>
-        <div class="stat-progress">
-          <div class="progress-bar">
-            <div class="progress-fill" id="posture-progress" style="width: 0%"></div>
-          </div>
-        </div>
-      </div>
-      
-      <div class="stat-card">
-        <div class="stat-icon">
-          <i class="fas fa-balance-scale"></i>
-        </div>
-        <div class="stat-info">
-          <h3>Balance</h3>
-          <div class="stat-value" id="balance-score">0%</div>
-        </div>
-        <div class="stat-progress">
-          <div class="progress-bar">
-            <div class="progress-fill" id="balance-progress" style="width: 0%"></div>
-          </div>
-        </div>
-      </div>
-      
-      <div class="stat-card">
-        <div class="stat-icon">
-          <i class="fas fa-project-diagram"></i>
-        </div>
-        <div class="stat-info">
-          <h3>Symmetry</h3>
-          <div class="stat-value" id="symmetry-score">0%</div>
-        </div>
-        <div class="stat-progress">
-          <div class="progress-bar">
-            <div class="progress-fill" id="symmetry-progress" style="width: 0%"></div>
-          </div>
-        </div>
-      </div>
-      
-      <div class="stat-card">
-        <div class="stat-icon">
-          <i class="fas fa-wave-square"></i>
-        </div>
-        <div class="stat-info">
-          <h3>Motion Smoothness</h3>
-          <div class="stat-value" id="smoothness-score">0%</div>
-        </div>
-        <div class="stat-progress">
-          <div class="progress-bar">
-            <div class="progress-fill" id="smoothness-progress" style="width: 0%"></div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Visualization Tabs -->
-    <section class="visualization-section">
+    <!-- Quick Stats Section -->
+    <section class="quick-stats-section">
       <div class="section-header">
-        <h2>Advanced Visualizations</h2>
-        <p>Detailed analysis through interactive charts and data</p>
+        <h2>Performance Metrics</h2>
+        <p>Real-time analysis of movement quality and biomechanics</p>
       </div>
       
-      <div class="tabs-container">
-        <div class="tabs-header">
-          <div class="tab active" data-tab="charts">
-            <i class="fas fa-chart-line"></i> Charts
+      <div class="stats-grid">
+        <div class="stat-card glass-card">
+          <div class="stat-icon">
+            <i class="fas fa-posture"></i>
           </div>
-          <div class="tab" data-tab="landmarks">
-            <i class="fas fa-map-marker-alt"></i> Landmark Data
+          <div class="stat-info">
+            <h3>Posture Score</h3>
+            <div class="stat-value" id="posture-score">0%</div>
+            <div class="stat-trend" id="posture-trend">
+              <i class="fas fa-arrow-up"></i> <span>2% from last analysis</span>
+            </div>
           </div>
-          <div class="tab" data-tab="analysis">
-            <i class="fas fa-microscope"></i> Detailed Analysis
+          <div class="stat-progress">
+            <div class="progress-bar">
+              <div class="progress-fill" id="posture-progress" style="width: 0%"></div>
+            </div>
+            <div class="progress-label">Optimal: 85%+</div>
           </div>
         </div>
         
-        <div class="tabs-content">
-          <div class="tab-pane active" id="charts-tab">
-            <div class="charts-grid">
-              <div class="chart-container">
-                <div class="chart-header">
-                  <h4>Joint Angles Over Time</h4>
-                  <div class="chart-legend">
-                    <span class="legend-item left-knee"><i class="fas fa-circle"></i> Left Knee</span>
-                    <span class="legend-item right-knee"><i class="fas fa-circle"></i> Right Knee</span>
-                  </div>
-                </div>
-                <div class="chart-wrapper">
-                  <canvas id="angle-chart"></canvas>
-                </div>
-              </div>
-              
-              <div class="chart-container">
-                <div class="chart-header">
-                  <h4>Body Movement Intensity</h4>
-                  <div class="chart-legend">
-                    <span class="legend-item torso"><i class="fas fa-circle"></i> Torso</span>
-                    <span class="legend-item head"><i class="fas fa-circle"></i> Head</span>
-                  </div>
-                </div>
-                <div class="chart-wrapper">
-                  <canvas id="movement-chart"></canvas>
-                </div>
-              </div>
-              
-              <div class="chart-container">
-                <div class="chart-header">
-                  <h4>Velocity of Extremities</h4>
-                  <div class="chart-legend">
-                    <span class="legend-item hands"><i class="fas fa-circle"></i> Hands</span>
-                    <span class="legend-item feet"><i class="fas fa-circle"></i> Feet</span>
-                  </div>
-                </div>
-                <div class="chart-wrapper">
-                  <canvas id="velocity-chart"></canvas>
-                </div>
-              </div>
-              
-              <div class="chart-container">
-                <div class="chart-header">
-                  <h4>Balance Stability Score</h4>
-                  <div class="chart-legend">
-                    <span class="legend-item stability"><i class="fas fa-circle"></i> Stability</span>
-                  </div>
-                </div>
-                <div class="chart-wrapper">
-                  <canvas id="stability-chart"></canvas>
-                </div>
-              </div>
+        <div class="stat-card glass-card">
+          <div class="stat-icon">
+            <i class="fas fa-balance-scale"></i>
+          </div>
+          <div class="stat-info">
+            <h3>Balance</h3>
+            <div class="stat-value" id="balance-score">0%</div>
+            <div class="stat-trend" id="balance-trend">
+              <i class="fas fa-minus"></i> <span>No previous data</span>
             </div>
           </div>
-          
-          <div class="tab-pane" id="landmarks-tab">
-            <div class="data-table-container">
-              <div class="table-header">
-                <h4>Pose Landmark Data</h4>
-                <div class="table-controls">
-                  <div class="search-box">
-                    <i class="fas fa-search"></i>
-                    <input type="text" placeholder="Search landmarks...">
-                  </div>
-                  <button class="btn btn-sm btn-outline">
-                    <i class="fas fa-download"></i> Export
-                  </button>
-                </div>
-              </div>
-              <div class="table-responsive">
-                <table class="data-table">
-                  <thead>
-                    <tr>
-                      <th>Landmark</th>
-                      <th>X</th>
-                      <th>Y</th>
-                      <th>Z</th>
-                      <th>Visibility</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody id="landmark-data">
-                    <tr>
-                      <td colspan="6" class="no-data">Start analysis to see landmark data</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+          <div class="stat-progress">
+            <div class="progress-bar">
+              <div class="progress-fill" id="balance-progress" style="width: 0%"></div>
+            </div>
+            <div class="progress-label">Optimal: 80%+</div>
+          </div>
+        </div>
+        
+        <div class="stat-card glass-card">
+          <div class="stat-icon">
+            <i class="fas fa-project-diagram"></i>
+          </div>
+          <div class="stat-info">
+            <h3>Symmetry</h3>
+            <div class="stat-value" id="symmetry-score">0%</div>
+            <div class="stat-trend" id="symmetry-trend">
+              <i class="fas fa-minus"></i> <span>No previous data</span>
             </div>
           </div>
-          
-          <div class="tab-pane" id="analysis-tab">
-            <div class="detailed-analysis">
-              <div class="analysis-column">
-                <h4>Movement Patterns</h4>
-                <div class="analysis-chart">
-                  <canvas id="pattern-chart"></canvas>
-                </div>
-                <div class="analysis-text">
-                  <p>Detailed analysis of movement patterns will appear here once analysis begins.</p>
-                </div>
-              </div>
-              
-              <div class="analysis-column">
-                <h4>Performance History</h4>
-                <div class="history-list">
-                  <div class="history-item">
-                    <div class="history-time">Today, 14:32</div>
-                    <div class="history-desc">Initial analysis started</div>
-                    <div class="history-score">72%</div>
-                  </div>
-                  <div class="history-item">
-                    <div class="history-time">Yesterday, 16:45</div>
-                    <div class="history-desc">Balance improvement detected</div>
-                    <div class="history-score">68%</div>
-                  </div>
-                  <div class="history-item">
-                    <div class="history-time">Oct 12, 10:15</div>
-                    <div class="history-desc">Symmetry analysis completed</div>
-                    <div class="history-score">65%</div>
-                  </div>
-                </div>
-              </div>
+          <div class="stat-progress">
+            <div class="progress-bar">
+              <div class="progress-fill" id="symmetry-progress" style="width: 0%"></div>
             </div>
+            <div class="progress-label">Optimal: 75%+</div>
+          </div>
+        </div>
+        
+        <div class="stat-card glass-card">
+          <div class="stat-icon">
+            <i class="fas fa-wave-square"></i>
+          </div>
+          <div class="stat-info">
+            <h3>Motion Quality</h3>
+            <div class="stat-value" id="motion-score">0%</div>
+            <div class="stat-trend" id="motion-trend">
+              <i class="fas fa-minus"></i> <span>No previous data</span>
+            </div>
+          </div>
+          <div class="stat-progress">
+            <div class="progress-bar">
+              <div class="progress-fill" id="motion-progress" style="width: 0%"></div>
+            </div>
+            <div class="progress-label">Optimal: 80%+</div>
           </div>
         </div>
       </div>
@@ -345,12 +239,17 @@
       <div class="footer-section">
         <h4>AI Critical Action Analyzer</h4>
         <p>Advanced pose estimation and movement analysis powered by AI</p>
+        <div class="footer-badges">
+          <span class="tech-badge">TensorFlow.js</span>
+          <span class="tech-badge">MediaPipe</span>
+          <span class="tech-badge">Three.js</span>
+        </div>
       </div>
       <div class="footer-section">
         <h4>Resources</h4>
-        <a href="#">Documentation</a>
-        <a href="#">API Reference</a>
-        <a href="#">Tutorials</a>
+        <a href="#"><i class="fas fa-book"></i> Documentation</a>
+        <a href="#"><i class="fas fa-code"></i> API Reference</a>
+        <a href="#"><i class="fas fa-graduation-cap"></i> Tutorials</a>
       </div>
       <div class="footer-section">
         <h4>Connect</h4>
@@ -358,9 +257,17 @@
         <a href="#"><i class="fab fa-twitter"></i> Twitter</a>
         <a href="#"><i class="fab fa-linkedin"></i> LinkedIn</a>
       </div>
+      <div class="footer-section">
+        <h4>Subscribe</h4>
+        <p>Get updates on new features</p>
+        <div class="subscribe-form">
+          <input type="email" placeholder="Your email address">
+          <button class="btn btn-primary btn-sm">Subscribe</button>
+        </div>
+      </div>
     </div>
     <div class="footer-bottom">
-      <p>&copy; 2023 AI Critical Action Analyzer. All rights reserved.</p>
+      <p>&copy; 2025 AI Critical Action Analyzer. All rights reserved.</p>
     </div>
   </footer>
 

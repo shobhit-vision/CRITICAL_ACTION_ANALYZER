@@ -1,8 +1,105 @@
-import { poseHistory, updateMetrics, updateLandmarkTable } from './ui.js';
+import { poseHistory, updateMetrics, updateLandmarkTable, updateSkeletonStatus, toggleSkeletonOverlay } from './ui.js';
 import { updateCharts } from './chart_manager.js';
 
 // max history defining
- const MAX_HISTORY = 100;
+const MAX_HISTORY = 100;
+
+// Skeleton canvas setup
+let skeletonCanvas, skeletonCtx, skeletonOverlay;
+
+// Initialize skeleton canvas
+function initializeSkeletonCanvas() {
+  skeletonCanvas = document.getElementById('skeleton-canvas');
+  if (skeletonCanvas) {
+    skeletonCtx = skeletonCanvas.getContext('2d');
+    setSkeletonCanvasSize();
+  }
+  
+  skeletonOverlay = document.getElementById('skeleton-overlay');
+}
+
+// Set canvas dimensions
+function setSkeletonCanvasSize() {
+  if (skeletonCanvas) {
+    skeletonCanvas.width = 400;
+    skeletonCanvas.height = 500;
+  }
+}
+
+// Draw skeleton function
+function drawSkeleton(landmarks) {
+  if (!landmarks || !skeletonCanvas || !skeletonCtx) return;
+  
+  skeletonCtx.clearRect(0, 0, skeletonCanvas.width, skeletonCanvas.height);
+  
+  // Calculate scaling to fit the skeleton in the canvas
+  const minX = Math.min(...landmarks.map(l => l.x));
+  const maxX = Math.max(...landmarks.map(l => l.x));
+  const minY = Math.min(...landmarks.map(l => l.y));
+  const maxY = Math.max(...landmarks.map(l => l.y));
+  
+  const width = maxX - minX;
+  const height = maxY - minY;
+  
+  const scale = Math.min(
+    skeletonCanvas.width * 0.8 / width,
+    skeletonCanvas.height * 0.8 / height
+  );
+  
+  const offsetX = (skeletonCanvas.width - width * scale) / 2 - minX * scale;
+  const offsetY = (skeletonCanvas.height - height * scale) / 2 - minY * scale;
+  
+  // Draw connections
+  if (window.POSE_CONNECTIONS) {
+    window.POSE_CONNECTIONS.forEach(([start, end]) => {
+      if (landmarks[start] && landmarks[end]) {
+        skeletonCtx.beginPath();
+        skeletonCtx.moveTo(
+          landmarks[start].x * scale + offsetX,
+          landmarks[start].y * scale + offsetY
+        );
+        skeletonCtx.lineTo(
+          landmarks[end].x * scale + offsetX,
+          landmarks[end].y * scale + offsetY
+        );
+        skeletonCtx.strokeStyle = '#4a6bff';
+        skeletonCtx.lineWidth = 3;
+        skeletonCtx.stroke();
+      }
+    });
+  }
+  
+  // Draw landmarks
+  landmarks.forEach(landmark => {
+    skeletonCtx.beginPath();
+    skeletonCtx.arc(
+      landmark.x * scale + offsetX,
+      landmark.y * scale + offsetY,
+      4, 0, 2 * Math.PI
+    );
+    skeletonCtx.fillStyle = '#FF0000';
+    skeletonCtx.fill();
+  });
+  
+  // Update skeleton info if elements exist
+  const landmarksCountEl = document.getElementById('landmarks-count');
+  if (landmarksCountEl) {
+    landmarksCountEl.textContent = landmarks.length;
+  }
+  
+  // Calculate average confidence
+  const avgConfidence = landmarks.reduce((sum, l) => sum + (l.visibility || 0), 0) / landmarks.length;
+  const confidenceScoreEl = document.getElementById('confidence-score');
+  if (confidenceScoreEl) {
+    confidenceScoreEl.textContent = `${Math.round(avgConfidence * 100)}%`;
+  }
+  
+  // Show active tracking indicator
+  updateSkeletonStatus('Tracking');
+  
+  // Hide overlay if visible
+  toggleSkeletonOverlay(false);
+}
 
 // Calculate angle between three points
 function calculateAngle(a, b, c) {
@@ -58,6 +155,18 @@ function analyzePose(landmarks) {
     (midHip.x - (leftAnkle.x + rightAnkle.x) / 2) / shoulderWidth * 100
   );
   
+  // Calculate motion quality (simplified)
+  let motionQuality = 85;
+  if (poseHistory.length > 5) {
+    const recentAngles = poseHistory.slice(-5).map(a => a.angles.leftElbow);
+    const differences = [];
+    for (let i = 1; i < recentAngles.length; i++) {
+      differences.push(Math.abs(recentAngles[i] - recentAngles[i-1]));
+    }
+    const avgDifference = differences.reduce((a, b) => a + b, 0) / differences.length;
+    motionQuality = Math.max(0, 100 - avgDifference * 2);
+  }
+  
   return {
     angles: {
       leftElbow: leftElbowAngle,
@@ -68,6 +177,8 @@ function analyzePose(landmarks) {
     symmetry: Math.max(0, Math.min(100, symmetryScore)),
     torsoStability: Math.max(0, Math.min(100, torsoStability)),
     balance: Math.max(0, Math.min(100, balanceScore)),
+    motionQuality: Math.max(0, Math.min(100, motionQuality)),
+    landmarks: landmarks,
     timestamp: Date.now()
   };
 }
@@ -75,6 +186,8 @@ function analyzePose(landmarks) {
 // Process pose results
 function onResultsPose(results) {
   const canvasElement = document.querySelector('.output_canvas');
+  if (!canvasElement) return;
+  
   const canvasCtx = canvasElement.getContext('2d');
   
   canvasCtx.save();
@@ -82,16 +195,21 @@ function onResultsPose(results) {
   canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
   
   if (results.poseLandmarks) {
-    // Draw landmarks and connections
-    window.drawConnectors(canvasCtx, results.poseLandmarks, window.POSE_CONNECTIONS, {
-      color: '#00FF00',
-      lineWidth: 2
-    });
-    window.drawLandmarks(canvasCtx, results.poseLandmarks, {
-      color: '#FF0000',
-      lineWidth: 1,
-      radius: 2
-    });
+    // Draw landmarks and connections on camera feed
+    // if (window.drawConnectors && window.drawLandmarks) {
+    //   window.drawConnectors(canvasCtx, results.poseLandmarks, window.POSE_CONNECTIONS, {
+    //     color: '#00FF00',
+    //     lineWidth: 2
+    //   });
+    //   window.drawLandmarks(canvasCtx, results.poseLandmarks, {
+    //     color: '#FF0000',
+    //     lineWidth: 1,
+    //     radius: 2
+    //   });
+    // }
+    
+    // Draw skeleton visualization
+    drawSkeleton(results.poseLandmarks);
     
     // Analyze pose
     const analysis = analyzePose(results.poseLandmarks);
@@ -101,17 +219,61 @@ function onResultsPose(results) {
         poseHistory.shift();
       }
       
-      updateCharts(analysis);
+      // Update charts if they exist
+      if (typeof updateCharts === 'function') {
+        updateCharts(analysis);
+      }
+      
       updateMetrics(analysis);
       updateLandmarkTable(results.poseLandmarks);
     }
+  } else {
+    // Show overlay if no landmarks detected
+    toggleSkeletonOverlay(true);
+    updateSkeletonStatus('Not Tracking');
   }
   
   canvasCtx.restore();
 }
 
+// Check if MediaPipe is loaded properly
+function checkMediaPipeLoaded() {
+  if (typeof window.Pose === 'undefined') {
+    console.error('MediaPipe Pose not loaded correctly');
+    
+    // Show error message to user
+    const errorOverlay = document.getElementById('mediapipe-error');
+    if (errorOverlay) {
+      errorOverlay.style.display = 'block';
+    }
+    
+    // Disable camera buttons
+    const startButton = document.getElementById('start-camera');
+    const stopButton = document.getElementById('stop-camera');
+    if (startButton) startButton.disabled = true;
+    if (stopButton) stopButton.disabled = true;
+    
+    return false;
+  }
+  return true;
+}
+
 // Initialize MediaPipe Pose
 function initializePose() {
+  // Initialize skeleton canvas
+  initializeSkeletonCanvas();
+
+  // Check if MediaPipe is loaded
+  if (!checkMediaPipeLoaded()) {
+    return null;
+  }
+  
+  // Check if Pose is available
+  if (typeof window.Pose === 'undefined') {
+    console.error('MediaPipe Pose not loaded');
+    return null;
+  }
+
   const pose = new window.Pose({
     locateFile: (file) => {
       return `https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.2/${file}`;
@@ -137,5 +299,7 @@ export {
   onResultsPose,
   initializePose,
   calculateAngle,
-  calculateDistance
+  calculateDistance,
+  drawSkeleton,
+  initializeSkeletonCanvas
 };
