@@ -20,8 +20,6 @@
       "openFiles": [
         "templates/index.html",
         "templates/dashboard.html",
-        "templates/analysis.html",
-        "templates/insights.html",
         "templates/settings.html"
       ]
     },

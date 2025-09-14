@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AI Critical Action Analyzer</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}">
   
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.1/camera_utils.js" crossorigin="anonymous"></script>
@@ -23,15 +23,43 @@
         <span>AI Action Analyzer</span>
       </div>
       <div class="nav-links">
-        <a href="" class="nav-link active">Home</a>
+        <a href="/" class="nav-link active">Home</a>
+        <div class="areas-dropdown">
+          <a href="#" class="nav-link">
+            Areas <i class="fas fa-chevron-down"></i>
+          </a>
+          <div class="dropdown-gap"></div>
+          <div class="dropdown-content">
+            <a href="physical-healthcare.html">
+              <i class="fas fa-heartbeat"></i> Physical Healthcare
+            </a>
+            <a href="daily-exercise.html">
+              <i class="fas fa-walking"></i> Daily Exercise Routine
+            </a>
+            <a href="sports-prevention.html">
+              <i class="fas fa-running"></i> Sports Injury Prevention
+            </a>
+            <a href="emergency-monitoring.html">
+              <i class="fas fa-first-aid"></i> Emergency Monitoring
+            </a>
+          </div>
+        </div>
         <a href="dashboard" class="nav-link">Dashboard</a>
-        <a href="analysis" class="nav-link">Analysis</a>
-        <a href="insights" class="nav-link">Insights</a>
         <a href="settings" class="nav-link">Settings</a>
+      </div>
+      <div class="nav-auth">
+        <a href="login.html" class="btn btn-login">Login</a>
+        <a href="signup.html" class="btn btn-signup">Sign Up</a>
       </div>
       <div class="mobile-menu-btn">
         <i class="fas fa-bars"></i>
       </div>
+    </div>
+    
+    <!-- Mobile auth buttons (shown only on mobile) -->
+    <div class="mobile-auth">
+      <a href="login.html" class="btn btn-login">Login</a>
+      <a href="signup.html" class="btn btn-signup">Sign Up</a>
     </div>
   </nav>
 
@@ -64,8 +92,7 @@
     <!-- Camera and Analysis Section -->
     <section class="analysis-section" id="analysis">
       <div class="section-header">
-        <h2>Live Analysis</h2>
-        <p>Real-time pose tracking and movement analysis with AI-powered insights</p>
+        <h2>Try Demo</h2>
       </div>
       
       <div class="analysis-content">
@@ -229,6 +256,60 @@
         </div>
       </div>
     </section>
+    
+    <!-- New Areas Section -->
+    <section class="areas-section">
+      <div class="section-header">
+        <h2>Specialized Analysis Areas</h2>
+        <p>Explore our specialized motion analysis solutions tailored to your specific needs</p>
+      </div>
+      
+      <div class="areas-grid">
+        <div class="area-card" onclick="window.location.href='physical-healthcare.html'">
+          <div class="card-icon">
+            <i class="fas fa-heartbeat"></i>
+          </div>
+          <h3>Physical Healthcare</h3>
+          <p>Monitor and improve your physical health with personalized movement analysis and corrective exercise recommendations.</p>
+          <a href="physical-healthcare.html" class="card-link">
+            Explore <i class="fas fa-arrow-right"></i>
+          </a>
+        </div>
+        
+        <div class="area-card" onclick="window.location.href='daily-exercise.html'">
+          <div class="card-icon">
+            <i class="fas fa-walking"></i>
+          </div>
+          <h3>Daily Exercise Routine</h3>
+          <p>Optimize your daily workout with form correction, progress tracking, and personalized exercise recommendations.</p>
+          <a href="daily-exercise.html" class="card-link">
+            Explore <i class="fas fa-arrow-right"></i>
+          </a>
+        </div>
+        
+        <div class="area-card" onclick="window.location.href='sports-prevention.html'">
+          <div class="card-icon">
+            <i class="fas fa-running"></i>
+          </div>
+          <h3>Sports Injury Prevention</h3>
+          <p>Identify movement patterns that may lead to injuries and receive guidance on proper technique for your sport.</p>
+          <a href="sports-prevention.html" class="card-link">
+            Explore <i class="fas fa-arrow-right"></i>
+          </a>
+        </div>
+        
+        <div class="area-card" onclick="window.location.href='emergency-monitoring.html'">
+          <div class="card-icon">
+            <i class="fas fa-first-aid"></i>
+          </div>
+          <h3>Emergency Monitoring</h3>
+          <p>Fall detection and emergency response system that alerts caregivers when abnormal movements or accidents occur.</p>
+          <a href="emergency-monitoring.html" class="card-link">
+            Explore <i class="fas fa-arrow-right"></i>
+          </a>
+        </div>
+      </div>
+    </section>
   </main>
 
   <!-- Footer -->
@@ -270,5 +351,27 @@
   </footer>
 
   <script type="module" src="{{ url_for('static', filename='js/action.js') }}"></script>
+  <script>
+    // Mobile menu functionality for areas dropdown
+    document.addEventListener('DOMContentLoaded', function() {
+      const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
+      const navLinks = document.querySelector('.nav-links');
+      const areasDropdown = document.querySelector('.areas-dropdown');
+      
+      mobileMenuBtn.addEventListener('click', function() {
+        navLinks.classList.toggle('active');
+        document.querySelector('.mobile-auth').classList.toggle('active');
+      });
+      
+      // Toggle areas dropdown on mobile
+      if (window.innerWidth <= 992) {
+        const areasLink = document.querySelector('.areas-dropdown .nav-link');
+        areasLink.addEventListener('click', function(e) {
+          e.preventDefault();
+          areasDropdown.classList.toggle('active');
+        });
+      }
+    });
+  </script>
 </body>
 </html>

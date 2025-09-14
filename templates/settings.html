@@ -3,16 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Critical Action Analyzer</title>
+  <title>Settings - AI Critical Action Analyzer</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}">
-  
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.1/camera_utils.js" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.2/drawing_utils.js" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.2/pose.js" crossorigin="anonymous"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.net.min.js"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='settings.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}">
 </head>
 <body>
   <!-- Navigation Header -->
@@ -23,252 +17,559 @@
         <span>AI Action Analyzer</span>
       </div>
       <div class="nav-links">
-        <a href="" class="nav-link active">Home</a>
+        <a href="/" class="nav-link">Home</a>
+        <div class="areas-dropdown">
+          <a href="#" class="nav-link">
+            Areas <i class="fas fa-chevron-down"></i>
+          </a>
+          <div class="dropdown-gap"></div>
+          <div class="dropdown-content">
+            <a href="physical-healthcare.html">
+              <i class="fas fa-heartbeat"></i> Physical Healthcare
+            </a>
+            <a href="daily-exercise.html">
+              <i class="fas fa-walking"></i> Daily Exercise Routine
+            </a>
+            <a href="sports-prevention.html">
+              <i class="fas fa-running"></i> Sports Injury Prevention
+            </a>
+            <a href="emergency-monitoring.html">
+              <i class="fas fa-first-aid"></i> Emergency Monitoring
+            </a>
+          </div>
+        </div>
         <a href="dashboard" class="nav-link">Dashboard</a>
-        <a href="analysis" class="nav-link">Analysis</a>
-        <a href="insights" class="nav-link">Insights</a>
-        <a href="settings" class="nav-link">Settings</a>
+        <a href="settings" class="nav-link active">Settings</a>
+      </div>
+      <div class="nav-auth">
+        <a href="login.html" class="btn btn-login">Login</a>
+        <a href="signup.html" class="btn btn-signup">Sign Up</a>
       </div>
       <div class="mobile-menu-btn">
         <i class="fas fa-bars"></i>
       </div>
     </div>
+    
+    <!-- Mobile auth buttons (shown only on mobile) -->
+    <div class="mobile-auth">
+      <a href="login.html" class="btn btn-login">Login</a>
+      <a href="signup.html" class="btn btn-signup">Sign Up</a>
+    </div>
   </nav>
 
-  <!-- Hero Section -->
-  <section class="hero" id="home">
-    <div class="hero-content">
-      <h1>AI-Powered Critical Action Analysis</h1>
-      <p>Advanced real-time pose estimation and biomechanical analysis with deep learning algorithms</p>
-      <div class="hero-actions">
-        <button class="btn btn-primary" id="hero-analysis-btn">
-          <i class="fas fa-play-circle"></i> Start Analysis
-        </button>
-        <button class="btn btn-outline">
-          <i class="fas fa-book"></i> View Documentation
-        </button>
+  <!-- Settings Content -->
+  <main class="settings-container">
+    <div class="settings-header">
+      <h1><i class="fas fa-cog"></i> Application Settings</h1>
+      <p>Customize your AI Action Analyzer experience</p>
+    </div>
+
+    <div class="settings-content">
+      <!-- Sidebar Navigation -->
+      <div class="settings-sidebar">
+        <div class="sidebar-header">
+          <h3>Settings</h3>
+        </div>
+        <nav class="settings-nav">
+          <a href="#general" class="nav-item active" data-section="general">
+            <i class="fas fa-sliders-h"></i> General
+          </a>
+          <a href="#privacy" class="nav-item" data-section="privacy">
+            <i class="fas fa-shield-alt"></i> Privacy & Security
+          </a>
+          <a href="#notifications" class="nav-item" data-section="notifications">
+            <i class="fas fa-bell"></i> Notifications
+          </a>
+          <a href="#appearance" class="nav-item" data-section="appearance">
+            <i class="fas fa-paint-brush"></i> Appearance
+          </a>
+          <a href="#account" class="nav-item" data-section="account">
+            <i class="fas fa-user"></i> Account
+          </a>
+          <a href="#advanced" class="nav-item" data-section="advanced">
+            <i class="fas fa-code"></i> Advanced
+          </a>
+          <a href="#about" class="nav-item" data-section="about">
+            <i class="fas fa-info-circle"></i> About
+          </a>
+        </nav>
+      </div>
+
+      <!-- Settings Panels -->
+      <div class="settings-panels">
+        <!-- General Settings -->
+        <div id="general" class="settings-panel active">
+          <h2>General Settings</h2>
+          <div class="setting-group">
+            <div class="setting-item">
+              <div class="setting-info">
+                <h3>Language</h3>
+                <p>Choose your preferred language</p>
+              </div>
+              <div class="setting-control">
+                <select class="form-select">
+                  <option>English</option>
+                  <option>Spanish</option>
+                  <option>French</option>
+                  <option>German</option>
+                  <option>Japanese</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <h3>Default Analysis Mode</h3>
+                <p>Select which mode to open by default</p>
+              </div>
+              <div class="setting-control">
+                <select class="form-select">
+                  <option>Real-time Analysis</option>
+                  <option>Video Upload</option>
+                  <option>Image Analysis</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <h3>Auto-save Results</h3>
+                <p>Automatically save analysis results to your account</p>
+              </div>
+              <div class="setting-control">
+                <label class="switch">
+                  <input type="checkbox" checked>
+                  <span class="slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <h3>Data Retention</h3>
+                <p>How long to keep your analysis data</p>
+              </div>
+              <div class="setting-control">
+                <select class="form-select">
+                  <option>30 days</option>
+                  <option>90 days</option>
+                  <option>1 year</option>
+                  <option>Forever</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Privacy & Security Settings -->
+        <div id="privacy" class="settings-panel">
+          <h2>Privacy & Security</h2>
+          <div class="setting-group">
+            <div class="setting-item">
+              <div class="setting-info">
+                <h3>Data Collection</h3>
+                <p>Allow anonymous usage data to help improve our services</p>
+              </div>
+              <div class="setting-control">
+                <label class="switch">
+                  <input type="checkbox" checked>
+                  <span class="slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <h3>Camera Access</h3>
+                <p>Remember camera permissions for faster analysis</p>
+              </div>
+              <div class="setting-control">
+                <label class="switch">
+                  <input type="checkbox" checked>
+                  <span class="slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <h3>Two-Factor Authentication</h3>
+                <p>Add an extra layer of security to your account</p>
+              </div>
+              <div class="setting-control">
+                <button class="btn btn-outline">Enable 2FA</button>
+              </div>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <h3>Data Export</h3>
+                <p>Download all your data in a portable format</p>
+              </div>
+              <div class="setting-control">
+                <button class="btn btn-outline">Export Data</button>
+              </div>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <h3>Clear All Data</h3>
+                <p>Permanently delete all your analysis history</p>
+              </div>
+              <div class="setting-control">
+                <button class="btn btn-danger">Delete All Data</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Notifications Settings -->
+        <div id="notifications" class="settings-panel">
+          <h2>Notification Preferences</h2>
+          <div class="setting-group">
+            <div class="setting-item">
+              <div class="setting-info">
+                <h3>Email Notifications</h3>
+                <p>Receive analysis reports and updates via email</p>
+              </div>
+              <div class="setting-control">
+                <label class="switch">
+                  <input type="checkbox" checked>
+                  <span class="slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <h3>Analysis Complete Alerts</h3>
+                <p>Get notified when your analysis is finished</p>
+              </div>
+              <div class="setting-control">
+                <label class="switch">
+                  <input type="checkbox" checked>
+                  <span class="slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <h3>Weekly Reports</h3>
+                <p>Receive a weekly summary of your activity</p>
+              </div>
+              <div class="setting-control">
+                <label class="switch">
+                  <input type="checkbox">
+                  <span class="slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <h3>Product Updates</h3>
+                <p>Get notified about new features and improvements</p>
+              </div>
+              <div class="setting-control">
+                <label class="switch">
+                  <input type="checkbox" checked>
+                  <span class="slider"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Appearance Settings -->
+        <div id="appearance" class="settings-panel">
+          <h2>Appearance</h2>
+          <div class="setting-group">
+            <div class="setting-item">
+              <div class="setting-info">
+                <h3>Theme</h3>
+                <p>Choose between light and dark mode</p>
+              </div>
+              <div class="setting-control">
+                <div class="theme-selector">
+                  <button class="theme-option active" data-theme="light">
+                    <i class="fas fa-sun"></i> Light
+                  </button>
+                  <button class="theme-option" data-theme="dark">
+                    <i class="fas fa-moon"></i> Dark
+                  </button>
+                  <button class="theme-option" data-theme="auto">
+                    <i class="fas fa-adjust"></i> Auto
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <h3>Animation Effects</h3>
+                <p>Enable or disable UI animations</p>
+              </div>
+              <div class="setting-control">
+                <label class="switch">
+                  <input type="checkbox" checked>
+                  <span class="slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <h3>Pose Visualization Style</h3>
+                <p>Choose how poses are displayed during analysis</p>
+              </div>
+              <div class="setting-control">
+                <select class="form-select">
+                  <option>Minimal</option>
+                  <option>Detailed</option>
+                  <option>Anatomical</option>
+                  <option>Wireframe</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <h3>Interface Density</h3>
+                <p>Adjust the spacing and size of UI elements</p>
+              </div>
+              <div class="setting-control">
+                <select class="form-select">
+                  <option>Compact</option>
+                  <option>Normal</option>
+                  <option>Comfortable</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Account Settings -->
+        <div id="account" class="settings-panel">
+          <h2>Account Settings</h2>
+          <div class="setting-group">
+            <div class="setting-item">
+              <div class="setting-info">
+                <h3>Profile Information</h3>
+                <p>Update your personal details</p>
+              </div>
+              <div class="setting-control">
+                <button class="btn btn-outline">Edit Profile</button>
+              </div>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <h3>Change Password</h3>
+                <p>Update your account password</p>
+              </div>
+              <div class="setting-control">
+                <button class="btn btn-outline">Change Password</button>
+              </div>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <h3>Subscription Plan</h3>
+                <p>Manage your current subscription</p>
+              </div>
+              <div class="setting-control">
+                <div class="subscription-info">
+                  <span class="badge premium">Premium</span>
+                  <small>Renews on Jan 15, 2025</small>
+                </div>
+              </div>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <h3>Connected Devices</h3>
+                <p>Manage devices linked to your account</p>
+              </div>
+              <div class="setting-control">
+                <button class="btn btn-outline">Manage Devices</button>
+              </div>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <h3>Delete Account</h3>
+                <p>Permanently delete your account and all data</p>
+              </div>
+              <div class="setting-control">
+                <button class="btn btn-danger">Delete Account</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Advanced Settings -->
+        <div id="advanced" class="settings-panel">
+          <h2>Advanced Settings</h2>
+          <div class="setting-group">
+            <div class="setting-item">
+              <div class="setting-info">
+                <h3>Pose Detection Model</h3>
+                <p>Choose which AI model to use for pose estimation</p>
+              </div>
+              <div class="setting-control">
+                <select class="form-select">
+                  <option>MediaPipe Heavy</option>
+                  <option>MediaPipe Lite</option>
+                  <option>Custom Model</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <h3>Detection Confidence Threshold</h3>
+                <p>Adjust the minimum confidence level for pose detection</p>
+              </div>
+              <div class="setting-control">
+                <input type="range" min="50" max="100" value="80" class="slider-confidence">
+                <span class="slider-value">80%</span>
+              </div>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <h3>Hardware Acceleration</h3>
+                <p>Use GPU acceleration for faster processing</p>
+              </div>
+              <div class="setting-control">
+                <label class="switch">
+                  <input type="checkbox" checked>
+                  <span class="slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <h3>Debug Mode</h3>
+                <p>Enable detailed logging for troubleshooting</p>
+              </div>
+              <div class="setting-control">
+                <label class="switch">
+                  <input type="checkbox">
+                  <span class="slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <h3>Reset to Defaults</h3>
+                <p>Restore all settings to their original values</p>
+              </div>
+              <div class="setting-control">
+                <button class="btn btn-outline">Reset All Settings</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- About Settings -->
+        <div id="about" class="settings-panel">
+          <h2>About</h2>
+          <div class="about-content">
+            <div class="app-info">
+              <div class="app-logo">
+                <i class="fas fa-brain"></i>
+              </div>
+              <h3>AI Critical Action Analyzer</h3>
+              <p class="version">Version 2.1.0</p>
+              <p class="description">
+                Advanced pose estimation and biomechanical analysis powered by AI
+              </p>
+            </div>
+
+            <div class="about-details">
+              <div class="detail-item">
+                <h4>Technology Stack</h4>
+                <div class="tech-badges">
+                  <span class="tech-badge">TensorFlow.js</span>
+                  <span class="tech-badge">MediaPipe</span>
+                  <span class="tech-badge">Three.js</span>
+                  <span class="tech-badge">WebGL</span>
+                </div>
+              </div>
+
+              <div class="detail-item">
+                <h4>Resources</h4>
+                <div class="resource-links">
+                  <a href="#" class="resource-link">
+                    <i class="fas fa-book"></i> Documentation
+                  </a>
+                  <a href="#" class="resource-link">
+                    <i class="fas fa-shield-alt"></i> Privacy Policy
+                  </a>
+                  <a href="#" class="resource-link">
+                    <i class="fas fa-file-contract"></i> Terms of Service
+                  </a>
+                  <a href="#" class="resource-link">
+                    <i class="fas fa-question-circle"></i> Help Center
+                  </a>
+                </div>
+              </div>
+
+              <div class="detail-item">
+                <h4>Connect With Us</h4>
+                <div class="social-links">
+                  <a href="#" class="social-link">
+                    <i class="fab fa-github"></i>
+                  </a>
+                  <a href="#" class="social-link">
+                    <i class="fab fa-twitter"></i>
+                  </a>
+                  <a href="#" class="social-link">
+                    <i class="fab fa-linkedin"></i>
+                  </a>
+                  <a href="#" class="social-link">
+                    <i class="fab fa-discord"></i>
+                  </a>
+                </div>
+              </div>
+
+              <div class="detail-item">
+                <h4>Copyright</h4>
+                <p>&copy; 2025 AI Critical Action Analyzer. All rights reserved.</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-    <div class="hero-visual">
-      <div class="visual-container">
-        <div class="pulse-ring"></div>
-        <div class="pulse-ring delay-1"></div>
-        <div class="pulse-ring delay-2"></div>
-        <i class="fas fa-running"></i>
-      </div>
-    </div>
-  </section>
-
-  <!-- Main Content -->
-  <main class="main-container">
-    <!-- Camera and Analysis Section -->
-    <section class="analysis-section" id="analysis">
-      <div class="section-header">
-        <h2>Live Analysis</h2>
-        <p>Real-time pose tracking and movement analysis with AI-powered insights</p>
-      </div>
-      
-      <div class="analysis-content">
-        <div class="camera-card glass-card">
-          <div class="card-header">
-            <h3>Live Camera Feed</h3>
-            <div class="camera-indicator">
-              <span class="indicator-dot"></span>
-              <span class="indicator-text" id="camera-status">Camera Off</span>
-            </div>
-          </div>
-          <div class="camera-container">
-            <video class="input_video" autoplay muted playsinline></video>
-            <canvas class="output_canvas"></canvas>
-            <div class="camera-overlay" id="camera-overlay">
-              <i class="fas fa-camera"></i>
-            </div>
-          </div>
-          <div class="camera-controls">
-            <button id="start-camera" class="btn btn-primary">
-              <i class="fas fa-play"></i> Start Analysis
-            </button>
-            <button id="stop-camera" class="btn btn-secondary" disabled>
-              <i class="fas fa-stop"></i> Stop Analysis
-            </button>
-            <button id="capture-frame" class="btn btn-outline" disabled>
-              <i class="fas fa-camera"></i> Capture Frame
-            </button>
-            <button id="reset-data" class="btn btn-outline">
-              <i class="fas fa-eraser"></i> Reset Data
-            </button>
-          </div>
-        </div>
-        
-        <!-- Skeleton Visualization Card -->
-        <div class="skeleton-card glass-card">
-          <div class="card-header">
-            <h3>3D Pose Visualization</h3>
-            <div class="skeleton-indicator">
-              <span class="indicator-dot" id="skeleton-status"></span>
-              <span class="indicator-text">Tracking</span>
-            </div>
-          </div>
-          <div class="skeleton-container">
-            <canvas id="skeleton-canvas"></canvas>
-            <div class="skeleton-overlay" id="skeleton-overlay">
-              <i class="fas fa-user"></i>
-              <p>Waiting for pose data...</p>
-            </div>
-          </div>
-          <div class="skeleton-controls">
-            <button class="btn btn-sm btn-outline" id="rotate-view">
-              <i class="fas fa-sync"></i> Rotate View
-            </button>
-            <button class="btn btn-sm btn-outline" id="toggle-3d">
-              <i class="fas fa-cube"></i> 3D View
-            </button>
-          </div>
-          <div class="skeleton-info">
-            <div class="skeleton-stats">
-              <div class="stat">
-                <span class="stat-label">Landmarks Detected</span>
-                <span class="stat-value" id="landmarks-count">0</span>
-              </div>
-              <div class="stat">
-                <span class="stat-label">Confidence</span>
-                <span class="stat-value" id="confidence-score">0%</span>
-              </div>
-              <div class="stat">
-                <span class="stat-label">Frame Rate</span>
-                <span class="stat-value" id="frame-rate">0 FPS</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Quick Stats Section -->
-    <section class="quick-stats-section">
-      <div class="section-header">
-        <h2>Performance Metrics</h2>
-        <p>Real-time analysis of movement quality and biomechanics</p>
-      </div>
-      
-      <div class="stats-grid">
-        <div class="stat-card glass-card">
-          <div class="stat-icon">
-            <i class="fas fa-posture"></i>
-          </div>
-          <div class="stat-info">
-            <h3>Posture Score</h3>
-            <div class="stat-value" id="posture-score">0%</div>
-            <div class="stat-trend" id="posture-trend">
-              <i class="fas fa-arrow-up"></i> <span>2% from last analysis</span>
-            </div>
-          </div>
-          <div class="stat-progress">
-            <div class="progress-bar">
-              <div class="progress-fill" id="posture-progress" style="width: 0%"></div>
-            </div>
-            <div class="progress-label">Optimal: 85%+</div>
-          </div>
-        </div>
-        
-        <div class="stat-card glass-card">
-          <div class="stat-icon">
-            <i class="fas fa-balance-scale"></i>
-          </div>
-          <div class="stat-info">
-            <h3>Balance</h3>
-            <div class="stat-value" id="balance-score">0%</div>
-            <div class="stat-trend" id="balance-trend">
-              <i class="fas fa-minus"></i> <span>No previous data</span>
-            </div>
-          </div>
-          <div class="stat-progress">
-            <div class="progress-bar">
-              <div class="progress-fill" id="balance-progress" style="width: 0%"></div>
-            </div>
-            <div class="progress-label">Optimal: 80%+</div>
-          </div>
-        </div>
-        
-        <div class="stat-card glass-card">
-          <div class="stat-icon">
-            <i class="fas fa-project-diagram"></i>
-          </div>
-          <div class="stat-info">
-            <h3>Symmetry</h3>
-            <div class="stat-value" id="symmetry-score">0%</div>
-            <div class="stat-trend" id="symmetry-trend">
-              <i class="fas fa-minus"></i> <span>No previous data</span>
-            </div>
-          </div>
-          <div class="stat-progress">
-            <div class="progress-bar">
-              <div class="progress-fill" id="symmetry-progress" style="width: 0%"></div>
-            </div>
-            <div class="progress-label">Optimal: 75%+</div>
-          </div>
-        </div>
-        
-        <div class="stat-card glass-card">
-          <div class="stat-icon">
-            <i class="fas fa-wave-square"></i>
-          </div>
-          <div class="stat-info">
-            <h3>Motion Quality</h3>
-            <div class="stat-value" id="motion-score">0%</div>
-            <div class="stat-trend" id="motion-trend">
-              <i class="fas fa-minus"></i> <span>No previous data</span>
-            </div>
-          </div>
-          <div class="stat-progress">
-            <div class="progress-bar">
-              <div class="progress-fill" id="motion-progress" style="width: 0%"></div>
-            </div>
-            <div class="progress-label">Optimal: 80%+</div>
-          </div>
-        </div>
-      </div>
-    </section>
   </main>
 
-  <!-- Footer -->
-  <footer class="footer">
-    <div class="footer-content">
-      <div class="footer-section">
-        <h4>AI Critical Action Analyzer</h4>
-        <p>Advanced pose estimation and movement analysis powered by AI</p>
-        <div class="footer-badges">
-          <span class="tech-badge">TensorFlow.js</span>
-          <span class="tech-badge">MediaPipe</span>
-          <span class="tech-badge">Three.js</span>
-        </div>
-      </div>
-      <div class="footer-section">
-        <h4>Resources</h4>
-        <a href="#"><i class="fas fa-book"></i> Documentation</a>
-        <a href="#"><i class="fas fa-code"></i> API Reference</a>
-        <a href="#"><i class="fas fa-graduation-cap"></i> Tutorials</a>
-      </div>
-      <div class="footer-section">
-        <h4>Connect</h4>
-        <a href="#"><i class="fab fa-github"></i> GitHub</a>
-        <a href="#"><i class="fab fa-twitter"></i> Twitter</a>
-        <a href="#"><i class="fab fa-linkedin"></i> LinkedIn</a>
-      </div>
-      <div class="footer-section">
-        <h4>Subscribe</h4>
-        <p>Get updates on new features</p>
-        <div class="subscribe-form">
-          <input type="email" placeholder="Your email address">
-          <button class="btn btn-primary btn-sm">Subscribe</button>
-        </div>
-      </div>
-    </div>
-    <div class="footer-bottom">
-      <p>&copy; 2025 AI Critical Action Analyzer. All rights reserved.</p>
-    </div>
-  </footer>
-
-  <script type="module" src="{{ url_for('static', filename='js/action.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/settings.js') }}"></script>
+  <script>
+    // Mobile menu functionality for areas dropdown
+    document.addEventListener('DOMContentLoaded', function() {
+      const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
+      const navLinks = document.querySelector('.nav-links');
+      const areasDropdown = document.querySelector('.areas-dropdown');
+      
+      mobileMenuBtn.addEventListener('click', function() {
+        navLinks.classList.toggle('active');
+        document.querySelector('.mobile-auth').classList.toggle('active');
+      });
+      
+      // Toggle areas dropdown on mobile
+      if (window.innerWidth <= 992) {
+        const areasLink = document.querySelector('.areas-dropdown .nav-link');
+        areasLink.addEventListener('click', function(e) {
+          e.preventDefault();
+          areasDropdown.classList.toggle('active');
+        });
+      }
+    });
+  </script>
 </body>
 </html>
