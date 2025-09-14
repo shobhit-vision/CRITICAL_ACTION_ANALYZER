@@ -1,16 +1,14 @@
 import { initializeCharts } from './chart_manager.js';
-import { startCamera, stopCamera, resetData } from './camera_manager.js';
+import { initializeButtons } from './button_manager.js';
 
 // Global variables
 let poseHistory = [];
 const MAX_HISTORY = 100;
 let charts = {};
-let analysisTimer = null;
 let timerSeconds = 0;
 
 // DOM elements - will be dynamically initialized
 let videoElement, canvasElement, canvasCtx;
-let startButton, stopButton, resetButton, captureButton;
 let tabs, tabPanes;
 let cameraStatus, skeletonStatus;
 let landmarksCount, confidenceScore, frameRate;
@@ -30,10 +28,6 @@ function initializeDOMElements() {
     if (canvasElement) {
       canvasCtx = canvasElement.getContext('2d');
     }
-    
-    startButton = document.getElementById('start-camera');
-    stopButton = document.getElementById('stop-camera');
-    resetButton = document.getElementById('reset-data');
     
     // Index page specific elements
     cameraStatus = document.getElementById('camera-status');
@@ -60,7 +54,6 @@ function initializeDOMElements() {
     cameraOverlay = document.getElementById('camera-overlay');
     skeletonOverlay = document.getElementById('skeleton-overlay');
     
-    captureButton = document.getElementById('capture-frame');
     rotateViewBtn = document.getElementById('rotate-view');
     toggle3dBtn = document.getElementById('toggle-3d');
     
@@ -245,33 +238,35 @@ function generateInsights() {
 // Start/stop analysis timer (dashboard page) with error handling
 function startAnalysisTimer() {
   try {
-    if (analysisTimer) clearInterval(analysisTimer);
+    const timerDisplay = document.getElementById('analysis-timer');
+    if (!timerDisplay) return;
+    
     timerSeconds = 0;
     
-    analysisTimer = setInterval(() => {
+    const timerInterval = setInterval(() => {
       try {
         timerSeconds++;
         const minutes = Math.floor(timerSeconds / 60);
         const seconds = timerSeconds % 60;
         
-        const timerDisplay = document.getElementById('analysis-timer');
-        if (timerDisplay) {
-          timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        }
+        timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
       } catch (error) {
         console.warn('Error in timer callback:', error.message);
+        clearInterval(timerInterval);
       }
     }, 1000);
+    
+    return timerInterval;
   } catch (error) {
     console.warn('Error starting analysis timer:', error.message);
+    return null;
   }
 }
 
-function stopAnalysisTimer() {
+function stopAnalysisTimer(timerInterval) {
   try {
-    if (analysisTimer) {
-      clearInterval(analysisTimer);
-      analysisTimer = null;
+    if (timerInterval) {
+      clearInterval(timerInterval);
     }
   } catch (error) {
     console.warn('Error stopping analysis timer:', error.message);
@@ -352,6 +347,9 @@ function initializeApp() {
   try {
     initializeDOMElements();
     
+    // Initialize buttons
+    initializeButtons();
+    
     // Initialize charts if on dashboard page
     try {
       if (document.getElementById('angle-chart')) {
@@ -359,50 +357,6 @@ function initializeApp() {
       }
     } catch (error) {
       console.warn('Error initializing charts:', error.message);
-    }
-    
-    // Set up event listeners for existing buttons
-    if (startButton) {
-      startButton.addEventListener('click', () => {
-        try {
-          startCamera();
-          startAnalysisTimer();
-          if (stopButton) stopButton.disabled = false;
-          if (startButton) startButton.disabled = true;
-          if (captureButton) captureButton.disabled = false;
-        } catch (error) {
-          console.warn('Error starting camera:', error.message);
-        }
-      });
-    }
-    
-    if (stopButton) {
-      stopButton.addEventListener('click', () => {
-        try {
-          stopCamera();
-          stopAnalysisTimer();
-          if (stopButton) stopButton.disabled = true;
-          if (startButton) startButton.disabled = false;
-          if (captureButton) captureButton.disabled = true;
-        } catch (error) {
-          console.warn('Error stopping camera:', error.message);
-        }
-      });
-      if (stopButton) stopButton.disabled = true;
-    }
-    
-    if (resetButton) {
-      resetButton.addEventListener('click', () => {
-        try {
-          resetData();
-        } catch (error) {
-          console.warn('Error resetting data:', error.message);
-        }
-      });
-    }
-    
-    if (captureButton) {
-      captureButton.disabled = true;
     }
     
     // Tab functionality (dashboard page)
@@ -450,36 +404,6 @@ function initializeApp() {
       });
     }
     
-    // Overlay start button (index page)
-    const overlayStartBtn = document.getElementById('overlay-start-btn');
-    if (overlayStartBtn) {
-      overlayStartBtn.addEventListener('click', () => {
-        try {
-          if (startButton) startButton.click();
-        } catch (error) {
-          console.warn('Error in overlay start button:', error.message);
-        }
-      });
-    }
-    
-    // Hero analysis button (index page)
-    const heroAnalysisBtn = document.getElementById('hero-analysis-btn');
-    if (heroAnalysisBtn) {
-      heroAnalysisBtn.addEventListener('click', () => {
-        try {
-          const analysisSection = document.getElementById('analysis');
-          if (analysisSection) {
-            analysisSection.scrollIntoView({ behavior: 'smooth' });
-            setTimeout(() => {
-              if (startButton) startButton.click();
-            }, 1000);
-          }
-        } catch (error) {
-          console.warn('Error in hero analysis button:', error.message);
-        }
-      });
-    }
-    
     // Handle window resize
     window.addEventListener('resize', onResize);
     
@@ -510,5 +434,6 @@ export {
   toggleCameraOverlay,
   toggleSkeletonOverlay,
   startAnalysisTimer,
-  stopAnalysisTimer
+  stopAnalysisTimer,
+  cameraOverlay
 };

@@ -192,7 +192,7 @@ body {
 
 .analysis-content {
   display: grid;
-  grid-template-columns: 1.2fr 0.8fr;
+  grid-template-columns: 1.1fr 0.9fr;
   gap: 2rem;
 }
 
@@ -845,84 +845,117 @@ body {
 }
 
 /* Skeleton Card Styles */
+/* Skeleton Card Styles (updated to match Camera Card) */
 .skeleton-card {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  background: var(--glass);
+  backdrop-filter: blur(10px);
+  border-radius: var(--border-radius);
+  border: 1px solid var(--glass);
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  box-shadow: var(--shadow);
   height: 100%;
+}
+
+.skeleton-card .card-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--glass);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.skeleton-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.skeleton-indicator .indicator-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--gray);
+  transition: var(--transition);
+}
+
+.skeleton-indicator .indicator-dot.active {
+  background: var(--success);
 }
 
 .skeleton-container {
   position: relative;
   width: 100%;
   height: 300px;
-  background: #f8f9fa;
+  background: #000;
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
 }
 
 #skeleton-canvas {
   width: 100%;
   height: 100%;
-  background: #000;
+  object-fit: contain;
+  display: block;
 }
 
 .skeleton-overlay {
   position: absolute;
   top: 0;
   left: 0;
-  right: 0;
-  bottom: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--glass-dark);
   display: flex;
   flex-direction: column;
-  align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.9);
-  color: #6c757d;
+  align-items: center;
+  color: var(--gray-light);
+  transition: var(--transition);
 }
 
 .skeleton-overlay i {
-  font-size: 48px;
-  margin-bottom: 16px;
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+.skeleton-controls {
+  padding: 1.5rem;
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  border-top: 1px solid var(--glass);
 }
 
 .skeleton-info {
-  padding: 16px;
-  border-top: 1px solid #eee;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--glass);
 }
 
 .skeleton-stats {
   display: flex;
-  justify-content: space-around;
+  justify-content: space-between;
+  gap: 1rem;
 }
 
 .skeleton-stats .stat {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
-.stat-label {
-  font-size: 12px;
-  color: #6c757d;
-  margin-bottom: 4px;
+.skeleton-stats .stat-label {
+  font-size: 0.75rem;
+  color: var(--gray-light);
+  margin-bottom: 0.25rem;
 }
 
-.stat-value {
-  font-weight: 600;
-  font-size: 18px;
-  color: #4a6bff;
-}
-
-.skeleton-indicator .indicator-dot {
-  background: #6c757d;
-}
-
-.skeleton-indicator .indicator-dot.active {
-  background: #28a745;
-  box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.2);
+.skeleton-stats .stat-value {
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: var(--primary);
 }
