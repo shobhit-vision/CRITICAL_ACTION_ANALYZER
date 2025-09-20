@@ -16,6 +16,8 @@ app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', os.urandom(24))
 app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', 'jwt-secret-key-change-in-production')
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=24)
+# Add session lifetime (e.g., 24 hours)
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=24)
 bcrypt = Bcrypt(app)
 
 # MongoDB connection from secret
@@ -46,6 +48,14 @@ except Exception as e:
         client = None
         users_collection = None
         actions_collection = None
+
+# Clear session on app startup to prevent automatic login after restart
+@app.before_request
+def clear_session_on_start():
+    if not hasattr(app, 'session_cleared'):
+        session.clear()
+        app.session_cleared = True
+        print("Session cleared on app startup")
 
 # JWT Token required decorator
 def token_required(f):
@@ -100,8 +110,18 @@ def generate_token(user_id):
 
 @app.route("/")
 def index():
+    # Check if we have both session AND a valid token
     if 'user_id' in session:
-        return redirect(url_for('dashboard'))
+        # Verify the token is still valid
+        token = request.cookies.get('token')
+        if token:
+            try:
+                jwt.decode(token, app.config['JWT_SECRET_KEY'], algorithms=['HS256'])
+                return redirect(url_for('dashboard'))
+            except:
+                # Token is invalid, clear session
+                session.clear()
+    
     return render_template("index.html", title="CRITICAL ACTION ANALYZER")
 
 @app.route("/login", methods=['GET', 'POST'])
@@ -194,17 +214,22 @@ def signup():
             flash('Email already registered', 'error')
             return render_template("signup.html", title="Sign Up - CRITICAL ACTION ANALYZER")
         
-        # Hash password and create user
-        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-        user_data = {
-            'username': username,
-            'email': email,
-            'password': hashed_password,
-            'created_at': datetime.utcnow(),
-            'last_login': datetime.utcnow()
-        }
+        # Check if username already exists
+        if users_collection.find_one({'username': username}):
+            flash('Username already taken', 'error')
+            return render_template("signup.html", title="Sign Up - CRITICAL ACTION ANALYZER")
         
+        # Hash password and create user
         try:
+            hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+            user_data = {
+                'username': username,
+                'email': email,
+                'password': hashed_password,
+                'created_at': datetime.utcnow(),
+                'last_login': datetime.utcnow()
+            }
+            
             user_id = users_collection.insert_one(user_data).inserted_id
             session['user_id'] = str(user_id)
             session['username'] = username
@@ -247,8 +272,8 @@ def signup():
             return response
             
         except Exception as e:
-            flash(f'Error creating account: {str(e)}', 'error')
             print(f"Signup error: {e}")
+            flash('Error creating account. Please try again.', 'error')
     
     return render_template("signup.html", title="Sign Up - CRITICAL ACTION ANALYZER")
 
@@ -259,6 +284,15 @@ def logout():
     
     response = redirect(url_for('index'))
     response.set_cookie('token', '', expires=0)
+    return response
+
+# Manual session clearing endpoint for testing
+@app.route("/clear-session")
+def clear_session():
+    session.clear()
+    response = redirect(url_for('index'))
+    response.set_cookie('token', '', expires=0)
+    flash('Session cleared', 'info')
     return response
 
 @app.route("/dashboard")
