@@ -20,7 +20,9 @@
       "openFiles": [
         "templates/index.html",
         "templates/dashboard.html",
-        "templates/settings.html"
+        "templates/settings.html",
+        "templates/login.html",
+        "templates/signup.html"
       ]
     },
     "vscode": {
@@ -31,3 +33,4 @@
   },
   "forwardPorts": [5000]
 }
+
