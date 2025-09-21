@@ -22,7 +22,8 @@
         "templates/dashboard.html",
         "templates/settings.html",
         "templates/login.html",
-        "templates/signup.html"
+        "templates/signup.html",
+        "templates/gait_analysis.html"
       ]
     },
     "vscode": {

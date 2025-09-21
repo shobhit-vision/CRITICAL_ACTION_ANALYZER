@@ -32,6 +32,7 @@ try:
     db = client['action_analyzer_db']
     users_collection = db['users']
     actions_collection = db['actions']
+    analyses_collection = db['analyses']  # New collection for analysis data
     
 except Exception as e:
     print(f"❌ Error connecting to MongoDB: {e}")
@@ -41,6 +42,7 @@ except Exception as e:
         db = client['action_analyzer_db']
         users_collection = db['users']
         actions_collection = db['actions']
+        analyses_collection = db['analyses']
         print("✅ Connected to local MongoDB as fallback")
     except Exception as fallback_error:
         print(f"❌ Fallback connection also failed: {fallback_error}")
@@ -48,6 +50,7 @@ except Exception as e:
         client = None
         users_collection = None
         actions_collection = None
+        analyses_collection = None
 
 # Clear session on app startup to prevent automatic login after restart
 @app.before_request
@@ -56,6 +59,18 @@ def clear_session_on_start():
         session.clear()
         app.session_cleared = True
         print("Session cleared on app startup")
+
+# Authentication required decorator
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            # Store the intended destination for redirect after login
+            session['next_url'] = request.url
+            flash('Please log in to access this page', 'warning')
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 # JWT Token required decorator
 def token_required(f):
@@ -74,6 +89,10 @@ def token_required(f):
                 token = auth_header.split(' ')[1]
         
         if not token:
+            # Store the intended destination for redirect after login
+            if request.endpoint and request.endpoint != 'static':
+                session['next_url'] = request.url
+            
             if request.accept_mimetypes.accept_json:
                 return jsonify({'message': 'Token is missing!'}), 401
             flash('Please login to access this page', 'error')
@@ -124,6 +143,8 @@ def index():
     
     return render_template("index.html", title="CRITICAL ACTION ANALYZER")
 
+
+
 @app.route("/login", methods=['GET', 'POST'])
 def login():
     if 'user_id' in session:
@@ -143,6 +164,12 @@ def login():
         if user and bcrypt.check_password_hash(user['password'], password):
             session['user_id'] = str(user['_id'])
             session['username'] = user['username']
+            
+            # Update last login
+            users_collection.update_one(
+                {'_id': user['_id']}, 
+                {'$set': {'last_login': datetime.utcnow()}}
+            )
             
             # Generate JWT token
             token = generate_token(user['_id'])
@@ -169,8 +196,9 @@ def login():
                 )
                 return response
             
-            # For regular web requests, redirect to dashboard
-            response = redirect(url_for('dashboard'))
+            # For regular web requests, redirect to intended page or dashboard
+            next_url = session.pop('next_url', None) or url_for('dashboard')
+            response = redirect(next_url)
             response.set_cookie(
                 'token', 
                 token, 
@@ -227,7 +255,12 @@ def signup():
                 'email': email,
                 'password': hashed_password,
                 'created_at': datetime.utcnow(),
-                'last_login': datetime.utcnow()
+                'last_login': datetime.utcnow(),
+                'preferences': {
+                    'theme': 'light',
+                    'notifications': True,
+                    'data_sharing': False
+                }
             }
             
             user_id = users_collection.insert_one(user_data).inserted_id
@@ -295,11 +328,42 @@ def clear_session():
     flash('Session cleared', 'info')
     return response
 
+# Protected area pages
+@app.route("/gait_analysis")
+@login_required
+def gait_analysis():
+    return render_template("gait_analysis.html", title="Physical Healthcare - CRITICAL ACTION ANALYZER")
+
+@app.route("/daily-exercise")
+@login_required
+def daily_exercise():
+    return render_template("daily-exercise.html", title="Daily Exercise - CRITICAL ACTION ANALYZER")
+
+@app.route("/sports-prevention")
+@login_required
+def sports_prevention():
+    return render_template("sports-prevention.html", title="Sports Prevention - CRITICAL ACTION ANALYZER")
+
+@app.route("/emergency-monitoring")
+@login_required
+def emergency_monitoring():
+    return render_template("emergency-monitoring.html", title="Emergency Monitoring - CRITICAL ACTION ANALYZER")
+
 @app.route("/dashboard")
-@token_required
-def dashboard(current_user):
+@login_required
+def dashboard():
+    # Get user from session
+    user_id = session.get('user_id')
+    user = users_collection.find_one({'_id': ObjectId(user_id)})
+    
+    if not user:
+        session.clear()
+        flash('User not found. Please log in again.', 'error')
+        return redirect(url_for('login'))
+    
     # Fetch user-specific data from MongoDB
-    user_actions = list(actions_collection.find({'user_id': current_user['_id']}).sort('timestamp', -1).limit(10))
+    user_actions = list(actions_collection.find({'user_id': user_id}).sort('timestamp', -1).limit(10))
+    user_analyses = list(analyses_collection.find({'user_id': user_id}).sort('timestamp', -1).limit(5))
     
     # Convert ObjectId to string for JSON serialization
     for action in user_actions:
@@ -307,17 +371,32 @@ def dashboard(current_user):
         if 'user_id' in action:
             action['user_id'] = str(action['user_id'])
     
+    for analysis in user_analyses:
+        analysis['_id'] = str(analysis['_id'])
+        if 'user_id' in analysis:
+            analysis['user_id'] = str(analysis['user_id'])
+    
     return render_template(
         "dashboard.html", 
         title="Dashboard - CRITICAL ACTION ANALYZER", 
-        user=current_user,
-        actions=user_actions
+        user=user,
+        actions=user_actions,
+        analyses=user_analyses
     )
 
 @app.route("/settings")
-@token_required
-def settings(current_user):
-    return render_template("settings.html", title="Settings - CRITICAL ACTION ANALYZER", user=current_user)
+@login_required
+def settings():
+    # Get user from session
+    user_id = session.get('user_id')
+    user = users_collection.find_one({'_id': ObjectId(user_id)})
+    
+    if not user:
+        session.clear()
+        flash('User not found. Please log in again.', 'error')
+        return redirect(url_for('login'))
+    
+    return render_template("settings.html", title="Settings - CRITICAL ACTION ANALYZER", user=user)
 
 # API Routes for JavaScript
 @app.route("/api/user", methods=['GET'])
@@ -326,7 +405,8 @@ def api_get_user(current_user):
     return jsonify({
         'id': str(current_user['_id']),
         'username': current_user['username'],
-        'email': current_user['email']
+        'email': current_user['email'],
+        'preferences': current_user.get('preferences', {})
     })
 
 @app.route("/api/actions", methods=['GET', 'POST'])
@@ -373,6 +453,50 @@ def api_actions(current_user):
         except Exception as e:
             return jsonify({'error': str(e)}), 500
 
+@app.route("/api/analyses", methods=['GET', 'POST'])
+@token_required
+def api_analyses(current_user):
+    if request.method == 'GET':
+        # Get user's analyses
+        limit = int(request.args.get('limit', 5))
+        analyses = list(analyses_collection.find({
+            'user_id': current_user['_id']
+        }).sort('timestamp', -1).limit(limit))
+        
+        # Convert ObjectId to string
+        for analysis in analyses:
+            analysis['_id'] = str(analysis['_id'])
+            analysis['user_id'] = str(analysis['user_id'])
+            if 'timestamp' in analysis and isinstance(analysis['timestamp'], datetime):
+                analysis['timestamp'] = analysis['timestamp'].isoformat()
+        
+        return jsonify(analyses)
+    
+    elif request.method == 'POST':
+        # Save a new analysis
+        try:
+            data = request.get_json()
+            if not data:
+                return jsonify({'error': 'No data provided'}), 400
+            
+            analysis = {
+                'user_id': current_user['_id'],
+                'analysis_type': data.get('analysis_type', 'pose_estimation'),
+                'results': data.get('results', {}),
+                'timestamp': datetime.utcnow(),
+                'metrics': data.get('metrics', {})
+            }
+            
+            analysis_id = analyses_collection.insert_one(analysis).inserted_id
+            return jsonify({
+                'success': True, 
+                'message': 'Analysis saved',
+                'analysis_id': str(analysis_id)
+            }), 201
+            
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+
 # Health check endpoint
 @app.route("/health")
 def health():
@@ -401,8 +525,11 @@ if __name__ == "__main__":
     # Create indexes for better performance
     try:
         users_collection.create_index("email", unique=True)
+        users_collection.create_index("username", unique=True)
         actions_collection.create_index("user_id")
         actions_collection.create_index("timestamp")
+        analyses_collection.create_index("user_id")
+        analyses_collection.create_index("timestamp")
         print("✅ Database indexes created")
     except Exception as e:
         print(f"❌ Error creating indexes: {e}")

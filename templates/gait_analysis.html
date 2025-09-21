@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gait Analysis | AI Critical Action Analyzer</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='gait.css') }}">
+  
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.1/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.2/drawing_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.2/pose.js" crossorigin="anonymous"></script>
+</head>
+<body>
+  <!-- Navigation Header -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <div class="nav-logo">
+        <i class="fas fa-brain"></i>
+        <span>AI Action Analyzer</span>
+      </div>
+      <div class="nav-links">
+        <a href="/" class="nav-link">Home</a>
+        <a href="dashboard" class="nav-link">Dashboard</a>
+        <div class="dropdown">
+          <a href="#" class="nav-link active">Analysis <i class="fas fa-chevron-down"></i></a>
+          <div class="dropdown-content">
+            <a href="gait-analysis" class="active">Gait Analysis</a>
+            <a href="physical-therapy">Physical Therapy</a>
+            <a href="recovery-tracking">Recovery Tracking</a>
+            <a href="sports-injury">Sports Injury Prevention</a>
+          </div>
+        </div>
+        <a href="reports" class="nav-link">Reports</a>
+        <a href="settings" class="nav-link">Settings</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Page Header -->
+  <section class="page-header">
+    <div class="header-content">
+      <h1><i class="fas fa-walking"></i> Gait Analysis</h1>
+      <p>Comprehensive analysis of walking patterns to identify abnormalities and improve mobility</p>
+      <div class="header-actions">
+        <button class="btn btn-primary" id="start-tutorial">
+          <i class="fas fa-play-circle"></i> How It Works
+        </button>
+        <a href="documentation#gait-analysis" class="btn btn-outline">
+          <i class="fas fa-book"></i> View Documentation
+        </a>
+      </div>
+    </div>
+    <div class="header-progress">
+      <div class="progress-card">
+        <div class="progress-info">
+          <span class="progress-label">Last Analysis Score</span>
+          <span class="progress-value">78%</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width: 78%"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Content -->
+  <main class="main-container">
+    <!-- Analysis Setup -->
+    <section class="setup-section">
+      <div class="section-header">
+        <h2>Analysis Setup</h2>
+        <p>Configure your gait analysis session</p>
+      </div>
+      
+      <div class="setup-options">
+        <div class="option-card">
+          <div class="option-icon">
+            <i class="fas fa-user"></i>
+          </div>
+          <h3>Patient Profile</h3>
+          <div class="option-form">
+            <div class="form-group">
+              <label for="height">Height (cm)</label>
+              <input type="number" id="height" placeholder="Enter height" value="170">
+            </div>
+            <div class="form-group">
+              <label for="weight">Weight (kg)</label>
+              <input type="number" id="weight" placeholder="Enter weight" value="68">
+            </div>
+            <div class="form-group">
+              <label for="condition">Primary Condition</label>
+              <select id="condition">
+                <option value="normal">Normal Gait</option>
+                <option value="post-injury">Post-Injury Recovery</option>
+                <option value="neurological">Neurological Condition</option>
+                <option value="aging">Age-Related Changes</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        
+        <div class="option-card">
+          <div class="option-icon">
+            <i class="fas fa-sliders-h"></i>
+          </div>
+          <h3>Analysis Parameters</h3>
+          <div class="option-form">
+            <div class="form-group">
+              <label for="duration">Analysis Duration (seconds)</label>
+              <input type="number" id="duration" placeholder="Duration" value="30" min="10" max="120">
+            </div>
+            <div class="form-group">
+              <label for="focus-area">Focus Area</label>
+              <select id="focus-area">
+                <option value="full-body">Full Body Analysis</option>
+                <option value="lower-body">Lower Body Only</option>
+                <option value="balance">Balance & Stability</option>
+                <option value="symmetry">Gait Symmetry</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="compare-previous" checked>
+                <span class="checkmark"></span>
+                Compare with previous sessions
+              </label>
+            </div>
+          </div>
+        </div>
+        
+        <div class="option-card">
+          <div class="option-icon">
+            <i class="fas fa-video"></i>
+          </div>
+          <h3>Camera Setup</h3>
+          <div class="option-form">
+            <div class="form-group">
+              <label for="camera-view">Camera View</label>
+              <select id="camera-view">
+                <option value="side">Side View (Recommended)</option>
+                <option value="front">Front View</option>
+                <option value="back">Back View</option>
+                <option value="multi">Multiple Angles</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="distance">Distance from Camera (meters)</label>
+              <input type="number" id="distance" placeholder="Distance" value="2.5" step="0.1" min="1" max="5">
+            </div>
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="record-session" checked>
+                <span class="checkmark"></span>
+                Record session for review
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Gait Analysis Section -->
+    <section class="analysis-section">
+      <div class="section-header">
+        <h2>Gait Analysis</h2>
+        <p>Real-time walking pattern assessment</p>
+      </div>
+      
+      <div class="analysis-content">
+        <div class="camera-card gait-camera">
+          <div class="card-header">
+            <h3>Gait Analysis View</h3>
+            <div class="camera-indicator">
+              <span class="indicator-dot"></span>
+              <span class="indicator-text" id="camera-status">Camera Off</span>
+            </div>
+          </div>
+          <div class="camera-container">
+            <video class="input_video" autoplay muted></video>
+            <canvas class="output_canvas" id="gait-canvas"></canvas>
+            <div class="camera-overlay" id="camera-overlay">
+              <i class="fas fa-walking"></i>
+              <p>Position yourself 2-3 meters from camera</p>
+              <p>Walk naturally from side to side</p>
+            </div>
+            <div class="walking-direction">
+              <div class="direction-arrow">
+                <i class="fas fa-arrow-left"></i>
+              </div>
+              <div class="direction-text">Walk this direction</div>
+              <div class="direction-arrow">
+                <i class="fas fa-arrow-right"></i>
+              </div>
+            </div>
+          </div>
+          <div class="camera-controls">
+            <button id="start-camera" class="btn btn-primary">
+              <i class="fas fa-play"></i> Start Gait Analysis
+            </button>
+            <button id="stop-camera" class="btn btn-secondary" disabled>
+              <i class="fas fa-stop"></i> Stop Analysis
+            </button>
+            <button id="capture-gait" class="btn btn-outline">
+              <i class="fas fa-camera"></i> Capture Frame
+            </button>
+          </div>
+        </div>
+        
+        <div class="insights-card">
+          <div class="card-header">
+            <h3>Gait Insights</h3>
+            <div class="time-display" id="analysis-timer">00:00</div>
+          </div>
+          <div class="insights-content">
+            <div class="insight-item">
+              <div class="insight-icon">
+                <i class="fas fa-ruler-combined"></i>
+              </div>
+              <div class="insight-text">
+                <h4>Stride Length</h4>
+                <p id="stride-length">Start analysis to measure stride...</p>
+              </div>
+            </div>
+            
+            <div class="insight-item">
+              <div class="insight-icon">
+                <i class="fas fa-tachometer-alt"></i>
+              </div>
+              <div class="insight-text">
+                <h4>Cadence</h4>
+                <p id="cadence">Start analysis to calculate cadence...</p>
+              </div>
+            </div>
+            
+            <div class="insight-item">
+              <div class="insight-icon">
+                <i class="fas fa-balance-scale"></i>
+              </div>
+              <div class="insight-text">
+                <h4>Symmetry</h4>
+                <p id="symmetry">Start analysis to assess symmetry...</p>
+              </div>
+            </div>
+            
+            <div class="insight-item">
+              <div class="insight-icon">
+                <i class="fas fa-dumbbell"></i>
+              </div>
+              <div class="insight-text">
+                <h4>Weight Distribution</h4>
+                <p id="weight-distribution">Start analysis to measure distribution...</p>
+              </div>
+            </div>
+            
+            <div class="insight-item">
+              <div class="insight-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+              </div>
+              <div class="insight-text">
+                <h4>Abnormalities Detected</h4>
+                <p id="abnormalities">No significant abnormalities detected yet...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Gait Metrics Dashboard -->
+    <section class="metrics-section">
+      <div class="section-header">
+        <h2>Gait Metrics</h2>
+        <p>Detailed measurements of your walking pattern</p>
+      </div>
+      
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-header">
+            <h4>Step Length</h4>
+            <div class="metric-value" id="step-length-value">0 cm</div>
+          </div>
+          <div class="metric-comparison">
+            <span class="comparison-label">vs. previous:</span>
+            <span class="comparison-value positive">+2.3%</span>
+          </div>
+          <div class="metric-chart">
+            <canvas id="step-length-chart"></canvas>
+          </div>
+        </div>
+        
+        <div class="metric-card">
+          <div class="metric-header">
+            <h4>Stride Time</h4>
+            <div class="metric-value" id="stride-time-value">0.0 s</div>
+          </div>
+          <div class="metric-comparison">
+            <span class="comparison-label">vs. previous:</span>
+            <span class="comparison-value negative">-1.2%</span>
+          </div>
+          <div class="metric-chart">
+            <canvas id="stride-time-chart"></canvas>
+          </div>
+        </div>
+        
+        <div class="metric-card">
+          <div class="metric-header">
+            <h4>Walking Speed</h4>
+            <div class="metric-value" id="walking-speed-value">0 m/s</div>
+          </div>
+          <div class="metric-comparison">
+            <span class="comparison-label">vs. previous:</span>
+            <span class="comparison-value positive">+3.1%</span>
+          </div>
+          <div class="metric-chart">
+            <canvas id="walking-speed-chart"></canvas>
+          </div>
+        </div>
+        
+        <div class="metric-card">
+          <div class="metric-header">
+            <h4>Step Width</h4>
+            <div class="metric-value" id="step-width-value">0 cm</div>
+          </div>
+          <div class="metric-comparison">
+            <span class="comparison-label">vs. previous:</span>
+            <span class="comparison-value neutral">0.0%</span>
+          </div>
+          <div class="metric-chart">
+            <canvas id="step-width-chart"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Gait Visualization -->
+    <section class="visualization-section">
+      <div class="section-header">
+        <h2>Gait Visualization</h2>
+        <p>Interactive analysis of your walking pattern</p>
+      </div>
+      
+      <div class="gait-visualization">
+        <div class="visualization-tabs">
+          <div class="viz-tab active" data-tab="phase-analysis">
+            <i class="fas fa-project-diagram"></i> Gait Phase Analysis
+          </div>
+          <div class="viz-tab" data-tab="joint-angles">
+            <i class="fas fa-angle-double-right"></i> Joint Angles
+          </div>
+          <div class="viz-tab" data-tab="pressure-map">
+            <i class="fas fa-weight"></i> Pressure Distribution
+          </div>
+          <div class="viz-tab" data-tab="comparison">
+            <i class="fas fa-code-compare"></i> Comparison View
+          </div>
+        </div>
+        
+        <div class="visualization-content">
+          <div class="viz-pane active" id="phase-analysis">
+            <div class="gait-phase-diagram">
+              <div class="phase-container">
+                <div class="phase" id="heel-strike">
+                  <div class="phase-icon">
+                    <i class="fas fa-shoe-prints"></i>
+                  </div>
+                  <div class="phase-info">
+                    <h4>Heel Strike</h4>
+                    <div class="phase-timing">12% of cycle</div>
+                  </div>
+                </div>
+                
+                <div class="phase" id="loading-response">
+                  <div class="phase-icon">
+                    <i class="fas fa-weight"></i>
+                  </div>
+                  <div class="phase-info">
+                    <h4>Loading Response</h4>
+                    <div class="phase-timing">12% of cycle</div>
+                  </div>
+                </div>
+                
+                <div class="phase" id="mid-stance">
+                  <div class="phase-icon">
+                    <i class="fas fa-balance-scale"></i>
+                  </div>
+                  <div class="phase-info">
+                    <h4>Mid Stance</h4>
+                    <div class="phase-timing">18% of cycle</div>
+                  </div>
+                </div>
+                
+                <div class="phase" id="terminal-stance">
+                  <div class="phase-icon">
+                    <i class="fas fa-forward"></i>
+                  </div>
+                  <div class="phase-info">
+                    <h4>Terminal Stance</h4>
+                    <div class="phase-timing">20% of cycle</div>
+                  </div>
+                </div>
+                
+                <div class="phase" id="pre-swing">
+                  <div class="phase-icon">
+                    <i class="fas fa-arrow-up"></i>
+                  </div>
+                  <div class="phase-info">
+                    <h4>Pre-Swing</h4>
+                    <div class="phase-timing">10% of cycle</div>
+                  </div>
+                </div>
+                
+                <div class="phase" id="swing-phase">
+                  <div class="phase-icon">
+                    <i class="fas fa-wind"></i>
+                  </div>
+                  <div class="phase-info">
+                    <h4>Swing Phase</h4>
+                    <div class="phase-timing">28% of cycle</div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="phase-visual">
+                <canvas id="gait-phase-chart"></canvas>
+                <div class="phase-indicator">
+                  <div class="indicator-bar"></div>
+                  <div class="indicator-handle"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="viz-pane" id="joint-angles">
+            <div class="joint-angle-analysis">
+              <div class="angle-controls">
+                <div class="angle-selector">
+                  <label for="joint-select">Select Joint:</label>
+                  <select id="joint-select">
+                    <option value="knee">Knee</option>
+                    <option value="hip">Hip</option>
+                    <option value="ankle">Ankle</option>
+                    <option value="pelvis">Pelvis</option>
+                  </select>
+                </div>
+                <div class="side-selector">
+                  <label class="radio-label">
+                    <input type="radio" name="side" value="left" checked>
+                    <span class="radiomark"></span>
+                    Left Side
+                  </label>
+                  <label class="radio-label">
+                    <input type="radio" name="side" value="right">
+                    <span class="radiomark"></span>
+                    Right Side
+                  </label>
+                  <label class="radio-label">
+                    <input type="radio" name="side" value="both">
+                    <span class="radiomark"></span>
+                    Both
+                  </label>
+                </div>
+              </div>
+              
+              <div class="angle-chart-container">
+                <canvas id="joint-angle-chart"></canvas>
+              </div>
+              
+              <div class="angle-data">
+                <div class="angle-stat">
+                  <span class="stat-label">Max Angle:</span>
+                  <span class="stat-value" id="max-angle">0°</span>
+                </div>
+                <div class="angle-stat">
+                  <span class="stat-label">Min Angle:</span>
+                  <span class="stat-value" id="min-angle">0°</span>
+                </div>
+                <div class="angle-stat">
+                  <span class="stat-label">Range:</span>
+                  <span class="stat-value" id="angle-range">0°</span>
+                </div>
+                <div class="angle-stat">
+                  <span class="stat-label">Asymmetry:</span>
+                  <span class="stat-value" id="angle-asymmetry">0%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="viz-pane" id="pressure-map">
+            <div class="pressure-map-container">
+              <h4>Foot Pressure Distribution</h4>
+              <div class="pressure-visual">
+                <div class="foot-pressure left-foot">
+                  <div class="foot-outline">
+                    <div class="pressure-zone heel"></div>
+                    <div class="pressure-zone midfoot"></div>
+                    <div class="pressure-zone forefoot"></div>
+                    <div class="pressure-zone toes"></div>
+                  </div>
+                  <div class="foot-label">Left Foot</div>
+                </div>
+                
+                <div class="foot-pressure right-foot">
+                  <div class="foot-outline">
+                    <div class="pressure-zone heel"></div>
+                    <div class="pressure-zone midfoot"></div>
+                    <div class="pressure-zone forefoot"></div>
+                    <div class="pressure-zone toes"></div>
+                  </div>
+                  <div class="foot-label">Right Foot</div>
+                </div>
+              </div>
+              
+              <div class="pressure-legend">
+                <div class="legend-item">
+                  <div class="legend-color low-pressure"></div>
+                  <span>Low Pressure</span>
+                </div>
+                <div class="legend-item">
+                  <div class="legend-color medium-pressure"></div>
+                  <span>Medium Pressure</span>
+                </div>
+                <div class="legend-item">
+                  <div class="legend-color high-pressure"></div>
+                  <span>High Pressure</span>
+                </div>
+              </div>
+              
+              <div class="pressure-data">
+                <div class="pressure-stat">
+                  <span class="stat-label">Left Peak Pressure:</span>
+                  <span class="stat-value" id="left-peak-pressure">0 kPa</span>
+                </div>
+                <div class="pressure-stat">
+                  <span class="stat-label">Right Peak Pressure:</span>
+                  <span class="stat-value" id="right-peak-pressure">0 kPa</span>
+                </div>
+                <div class="pressure-stat">
+                  <span class="stat-label">Pressure Symmetry:</span>
+                  <span class="stat-value" id="pressure-symmetry">0%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="viz-pane" id="comparison">
+            <div class="comparison-view">
+              <div class="comparison-header">
+                <h4>Gait Pattern Comparison</h4>
+                <div class="comparison-selectors">
+                  <select id="compare-metric">
+                    <option value="stride-length">Stride Length</option>
+                    <option value="cadence">Cadence</option>
+                    <option value="speed">Walking Speed</option>
+                    <option value="symmetry">Symmetry Index</option>
+                  </select>
+                  <select id="compare-timeframe">
+                    <option value="7days">Last 7 Days</option>
+                    <option value="30days">Last 30 Days</option>
+                    <option value="3months">Last 3 Months</option>
+                    <option value="all">All Time</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div class="comparison-chart-container">
+                <canvas id="gait-comparison-chart"></canvas>
+              </div>
+              
+              <div class="comparison-insights">
+                <h5>AI Analysis:</h5>
+                <p id="comparison-insight-text">Your gait pattern has shown consistent improvement over the past week, with a 5.2% increase in stride length symmetry.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- AI Recommendations -->
+    <section class="recommendations-section">
+      <div class="section-header">
+        <h2>AI-Powered Recommendations</h2>
+        <p>Personalized suggestions to improve your gait</p>
+      </div>
+      
+      <div class="recommendations-grid">
+        <div class="recommendation-card">
+          <div class="recommendation-icon">
+            <i class="fas fa-shoe-prints"></i>
+          </div>
+          <h4>Footwear Suggestions</h4>
+          <div class="recommendation-content">
+            <p>Based on your gait analysis, we recommend shoes with additional arch support and cushioning in the heel area.</p>
+            <ul>
+              <li>Consider stability shoes rather than neutral ones</li>
+              <li>Look for a heel-to-toe drop of 8-10mm</li>
+              <li>Replace shoes every 300-500 miles</li>
+            </ul>
+          </div>
+          <div class="recommendation-priority">
+            <span class="priority medium">Medium Priority</span>
+          </div>
+        </div>
+        
+        <div class="recommendation-card">
+          <div class="recommendation-icon">
+            <i class="fas fa-dumbbell"></i>
+          </div>
+          <h4>Strength Exercises</h4>
+          <div class="recommendation-content">
+            <p>Your analysis shows slight weakness in hip stabilizers. Try these exercises:</p>
+            <ul>
+              <li>Clamshells: 3 sets of 15 reps each side</li>
+              <li>Single-leg bridges: 3 sets of 12 reps each side</li>
+              <li>Lateral band walks: 3 sets of 10 steps each direction</li>
+            </ul>
+          </div>
+          <div class="recommendation-priority">
+            <span class="priority high">High Priority</span>
+          </div>
+        </div>
+        
+        <div class="recommendation-card">
+          <div class="recommendation-icon">
+            <i class="fas fa-road"></i>
+          </div>
+          <h4>Walking Technique</h4>
+          <div class="recommendation-content">
+            <p>Focus on these form adjustments during walking:</p>
+            <ul>
+              <li>Maintain taller posture with shoulders back</li>
+              <li>Engage your core muscles while walking</li>
+              <li>Try to land with a midfoot strike rather than heel strike</li>
+              <li>Increase cadence by 5-10% to reduce impact forces</li>
+            </ul>
+          </div>
+          <div class="recommendation-priority">
+            <span class="priority high">High Priority</span>
+          </div>
+        </div>
+        
+        <div class="recommendation-card">
+          <div class="recommendation-icon">
+            <i class="fas fa-heartbeat"></i>
+          </div>
+          <h4>Professional Referral</h4>
+          <div class="recommendation-content">
+            <p>Based on your asymmetry measurements, we recommend:</p>
+            <ul>
+              <li>Consultation with a physical therapist for personalized assessment</li>
+              <li>Possible orthotic evaluation if asymmetry persists</li>
+              <li>Follow-up analysis in 2-4 weeks to monitor progress</li>
+            </ul>
+          </div>
+          <div class="recommendation-priority">
+            <span class="priority low">Low Priority</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Progress Tracking -->
+    <section class="progress-section">
+      <div class="section-header">
+        <h2>Progress Tracking</h2>
+        <p>Monitor your gait improvements over time</p>
+      </div>
+      
+      <div class="progress-content">
+        <div class="progress-chart-container">
+          <canvas id="progress-trend-chart"></canvas>
+        </div>
+        
+        <div class="progress-stats">
+          <div class="progress-stat">
+            <div class="stat-value">78%</div>
+            <div class="stat-label">Current Gait Score</div>
+          </div>
+          
+          <div class="progress-stat">
+            <div class="stat-value positive">+8%</div>
+            <div class="stat-label">Improvement (30 days)</div>
+          </div>
+          
+          <div class="progress-stat">
+            <div class="stat-value">12</div>
+            <div class="stat-label">Sessions Completed</div>
+          </div>
+          
+          <div class="progress-stat">
+            <div class="stat-value">92%</div>
+            <div class="stat-label">Consistency Score</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="progress-actions">
+        <button class="btn btn-outline">
+          <i class="fas fa-download"></i> Export Progress Report
+        </button>
+        <button class="btn btn-primary">
+          <i class="fas fa-calendar-plus"></i> Schedule Next Session
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-content">
+      <div class="footer-section">
+        <h4>AI Critical Action Analyzer</h4>
+        <p>Advanced gait analysis powered by AI and computer vision</p>
+      </div>
+      <div class="footer-section">
+        <h4>Resources</h4>
+        <a href="documentation">Documentation</a>
+        <a href="research">Research</a>
+        <a href="support">Support</a>
+      </div>
+      <div class="footer-section">
+        <h4>Connect</h4>
+        <a href="#"><i class="fab fa-github"></i> GitHub</a>
+        <a href="#"><i class="fab fa-twitter"></i> Twitter</a>
+        <a href="#"><i class="fab fa-linkedin"></i> LinkedIn</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2023 AI Critical Action Analyzer. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script type="module" src="{{ url_for('static', filename='js/gait_analysis.js') }}"></script>
+</body>
+</html>
