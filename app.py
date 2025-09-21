@@ -213,6 +213,7 @@ def login():
     
     return render_template("login.html", title="Login - CRITICAL ACTION ANALYZER")
 
+
 @app.route("/signup", methods=['GET', 'POST'])
 def signup():
     if 'user_id' in session:

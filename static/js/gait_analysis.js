@@ -740,3 +740,4 @@ document.addEventListener('DOMContentLoaded', function() {
     [23, 25], [24, 26], [25, 27], [26, 28] // Hips to ankles
   ];
 });
+
