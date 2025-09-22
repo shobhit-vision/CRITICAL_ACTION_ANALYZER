@@ -177,24 +177,24 @@ def login():
             flash('Login successful!', 'success')
             
             # For API requests, return JSON
-            if request.accept_mimetypes.accept_json:
-                response = jsonify({
-                    'message': 'Login successful',
-                    'user': {
-                        'id': str(user['_id']),
-                        'username': user['username'],
-                        'email': user['email']
-                    }
-                })
-                response.set_cookie(
-                    'token', 
-                    token, 
-                    httponly=True, 
-                    secure=True, 
-                    samesite='Lax',
-                    max_age=24*60*60  # 24 hours
-                )
-                return response
+            # if request.accept_mimetypes.accept_json:
+            #     response = jsonify({
+            #         'message': 'Login successful',
+            #         'user': {
+            #             'id': str(user['_id']),
+            #             'username': user['username'],
+            #             'email': user['email']
+            #         }
+            #     })
+            #     response.set_cookie(
+            #         'token', 
+            #         token, 
+            #         httponly=True, 
+            #         secure=True, 
+            #         samesite='Lax',
+            #         max_age=24*60*60  # 24 hours
+            #     )
+            #     return response
             
             # For regular web requests, redirect to intended page or dashboard
             next_url = session.pop('next_url', None) or url_for('dashboard')
@@ -335,20 +335,51 @@ def clear_session():
 def gait_analysis():
     return render_template("gait_analysis.html", title="Physical Healthcare - CRITICAL ACTION ANALYZER")
 
-@app.route("/daily-exercise")
+@app.route("/daily_exercise")
 @login_required
 def daily_exercise():
-    return render_template("daily-exercise.html", title="Daily Exercise - CRITICAL ACTION ANALYZER")
+    return render_template("daily_exercise.html", title="Daily Exercise - CRITICAL ACTION ANALYZER")
 
-@app.route("/sports-prevention")
+@app.route("/recovery")
+@login_required
+def recovery():
+    return render_template("recovery.html", title="Recovery - CRITICAL ACTION ANALYZER")
+
+@app.route("/therapy")
+@login_required
+def therapy():
+    return render_template("therapy.html", title="Therapy - CRITICAL ACTION ANALYZER")
+
+@app.route("/daily_exercise_documentation")
+@login_required
+def daily_exercise_documentation():
+    return render_template("daily_exercise_documentation.html", title="Daily Exercise - CRITICAL ACTION ANALYZER")
+
+@app.route("/emergency_monitoring_documentation.html")
+@login_required
+def emergency_monitoring_documentation():
+    return render_template("emergency_monitoring_documentation.html", title="Daily Exercise - CRITICAL ACTION ANALYZER")
+
+@app.route("/physical_healthcare_documentation.html")
+@login_required
+def physical_healthcare_documentation():
+    return render_template("physical_healthcare_documentation.html", title="Physical healthcare documentation - CRITICAL ACTION ANALYZER")
+
+@app.route("/sports_prevention_documentation.html")
+@login_required
+def sports_prevention_documentation():
+    return render_template("sports_prevention_documentation.html", title="Daily Exercise - CRITICAL ACTION ANALYZER")
+
+
+@app.route("/sports_prevention")
 @login_required
 def sports_prevention():
-    return render_template("sports-prevention.html", title="Sports Prevention - CRITICAL ACTION ANALYZER")
+    return render_template("sports_prevention.html", title="Sports Prevention - CRITICAL ACTION ANALYZER")
 
-@app.route("/emergency-monitoring")
+@app.route("/emergency_monitoring")
 @login_required
 def emergency_monitoring():
-    return render_template("emergency-monitoring.html", title="Emergency Monitoring - CRITICAL ACTION ANALYZER")
+    return render_template("emergency_monitoring.html", title="Emergency Monitoring - CRITICAL ACTION ANALYZER")
 
 @app.route("/dashboard")
 @login_required

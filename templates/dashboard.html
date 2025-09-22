@@ -1,367 +1,1251 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Critical Action Analyzer | Pose Analysis System</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}">
-  
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.1/camera_utils.js" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.2/drawing_utils.js" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.2/pose.js" crossorigin="anonymous"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.net.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ActionInsight AI | Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #4361ee;
+            --primary-dark: #3a56d4;
+            --secondary: #7209b7;
+            --success: #4cc9f0;
+            --warning: #f8961e;
+            --danger: #e63946;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --gray: #6c757d;
+            --light-gray: #e9ecef;
+            --card-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+            --border-radius: 12px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            color: var(--dark);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header Styles */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            margin-bottom: 30px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo i {
+            font-size: 28px;
+            color: var(--primary);
+        }
+
+        .logo h1 {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .logout-btn {
+            background: var(--light);
+            border: none;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: 500;
+            transition: var(--transition);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .logout-btn:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Dashboard Content */
+        .dashboard-content {
+            display: grid;
+            grid-template-columns: 1fr 3fr;
+            gap: 30px;
+        }
+
+        /* Area Selection Panel */
+        .area-selection {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 25px;
+            box-shadow: var(--card-shadow);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+
+        .area-selection h2 {
+            margin-bottom: 20px;
+            font-size: 20px;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .area-selection h2 i {
+            color: var(--primary);
+        }
+
+        .area-options {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .area-option {
+            padding: 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: var(--transition);
+            border: 2px solid var(--light-gray);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .area-option:hover {
+            border-color: var(--primary);
+            transform: translateY(-3px);
+        }
+
+        .area-option.active {
+            border-color: var(--primary);
+            background: rgba(67, 97, 238, 0.05);
+        }
+
+        .area-option i {
+            font-size: 20px;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: var(--light-gray);
+            color: var(--primary);
+        }
+
+        .area-option.active i {
+            background: var(--primary);
+            color: white;
+        }
+
+        .area-option h3 {
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+
+        .area-option p {
+            font-size: 13px;
+            color: var(--gray);
+        }
+
+        /* Main Dashboard Area */
+        .dashboard-main {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 25px;
+            box-shadow: var(--card-shadow);
+            min-height: 500px;
+        }
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .dashboard-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--dark);
+        }
+
+        .dashboard-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-btn {
+            padding: 8px 15px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: 500;
+            transition: var(--transition);
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .primary-btn {
+            background: var(--primary);
+            color: white;
+        }
+
+        .primary-btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+
+        .secondary-btn {
+            background: var(--light-gray);
+            color: var(--dark);
+        }
+
+        .secondary-btn:hover {
+            background: #dcdcdc;
+        }
+
+        /* Area Content */
+        .area-content {
+            display: none;
+        }
+
+        .area-content.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .welcome-message {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .welcome-message i {
+            font-size: 60px;
+            color: var(--primary);
+            margin-bottom: 20px;
+        }
+
+        .welcome-message h2 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            color: var(--dark);
+        }
+
+        .welcome-message p {
+            color: var(--gray);
+            max-width: 600px;
+            margin: 0 auto 30px;
+            line-height: 1.6;
+        }
+
+        /* Subsection Styles */
+        .subsection-container {
+            margin-bottom: 30px;
+        }
+
+        .subsection-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--light-gray);
+        }
+
+        .subsection-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .subsection-title i {
+            color: var(--primary);
+        }
+
+        .subsection-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .subsection-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        /* Report Cards */
+        .reports-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .report-card {
+            background: var(--light);
+            border-radius: 10px;
+            padding: 20px;
+            transition: var(--transition);
+            border-left: 4px solid var(--primary);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .report-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .report-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .report-title {
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .report-date {
+            font-size: 12px;
+            color: var(--gray);
+        }
+
+        .report-metrics {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        .metric {
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .metric-label {
+            font-size: 12px;
+            color: var(--gray);
+        }
+
+        .report-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .report-btn {
+            padding: 5px 10px;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            font-size: 12px;
+            transition: var(--transition);
+            text-decoration: none;
+            color: inherit;
+            display: inline-block;
+        }
+
+        .view-btn {
+            background: var(--primary);
+            color: white;
+        }
+
+        .view-btn:hover {
+            background: var(--primary-dark);
+        }
+
+        .share-btn {
+            background: var(--light-gray);
+            color: var(--dark);
+        }
+
+        .share-btn:hover {
+            background: #dcdcdc;
+        }
+
+        /* No Reports Message */
+        .no-reports {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--gray);
+            grid-column: 1 / -1;
+        }
+
+        .no-reports i {
+            font-size: 50px;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
+        /* Loading Spinner */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            grid-column: 1 / -1;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Progress Bars */
+        .progress-container {
+            margin: 15px 0;
+        }
+
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background-color: var(--light-gray);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: var(--primary);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+
+        /* Status Indicators */
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-good {
+            background-color: rgba(76, 201, 240, 0.2);
+            color: #4cc9f0;
+        }
+
+        .status-warning {
+            background-color: rgba(248, 150, 30, 0.2);
+            color: #f8961e;
+        }
+
+        .status-critical {
+            background-color: rgba(230, 57, 70, 0.2);
+            color: #e63946;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 992px) {
+            .dashboard-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .area-selection {
+                order: 2;
+                position: static;
+            }
+            
+            .dashboard-main {
+                order: 1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .subsection-grid, .reports-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 576px) {
+            header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+            
+            .subsection-header, .dashboard-header {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+            
+            .subsection-actions, .dashboard-actions {
+                width: 100%;
+                justify-content: space-between;
+            }
+        }
+    </style>
 </head>
 <body>
-  <!-- Navigation Header -->
-  <nav class="navbar">
-    <div class="nav-container">
-      <div class="nav-logo">
-        <i class="fas fa-brain"></i>
-        <span>AI Action Analyzer</span>
-      </div>
-      <div class="nav-links">
-        <a href="/" class="nav-link">Home</a>
-        <a href="dashboard" class="nav-link">Dashboard</a>
-        <a href="settings" class="nav-link">Settings</a>
-      </div>
-    </div>
-  </nav>
-
-  <!-- Hero Section -->
-  <section class="hero">
-    <div class="hero-content">
-      <h1>AI-Powered Critical Action Analysis</h1>
-      <p>Real-time pose estimation and movement analysis with advanced AI algorithms</p>
-    </div>
-    <div class="hero-visual">
-      <div class="visual-container">
-        <div class="pulse-ring"></div>
-        <i class="fas fa-running"></i>
-      </div>
-    </div>
-  </section>
-
-  <!-- Main Content -->
-  <main class="main-container">
-    <!-- Camera and Analysis Section -->
-    <section class="analysis-section">
-      <div class="section-header">
-        <h2>Live Analysis</h2>
-        <p>Real-time pose tracking and movement analysis</p>
-      </div>
-      
-      <div class="analysis-content">
-        <div class="camera-card">
-          <div class="card-header">
-            <h3>Live Camera Feed</h3>
-            <div class="camera-indicator">
-              <span class="indicator-dot"></span>
-              <span class="indicator-text" id="camera-status">Camera Off</span>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <i class="fas fa-brain"></i>
+                <h1>ActionInsight AI</h1>
             </div>
-          </div>
-          <div class="camera-container">
-            <video class="input_video" autoplay muted></video>
-            <canvas class="output_canvas"></canvas>
-            <div class="camera-overlay" id="camera-overlay">
-              <i class="fas fa-camera"></i>
-              <p>Camera feed inactive</p>
+            <div class="user-info">
+                <div class="user-avatar" id="userAvatar">JD</div>
+                <span id="userName">John Doe</span>
+                <a href="index" class="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
             </div>
-          </div>
-          <div class="camera-controls">
-            <button id="start-camera" class="btn btn-primary">
-              <i class="fas fa-play"></i> Start Analysis
-            </button>
-            <button id="stop-camera" class="btn btn-secondary" disabled>
-              <i class="fas fa-stop"></i> Stop Analysis
-            </button>
-            <button id="reset-data" class="btn btn-outline">
-              <i class="fas fa-eraser"></i> Reset Data
-            </button>
-          </div>
+        </header>
+
+        <div class="dashboard-content">
+            <div class="area-selection">
+                <h2><i class="fas fa-th-large"></i> Analysis Areas</h2>
+                <div class="area-options">
+                    <div class="area-option active" data-area="physical_healthcare">
+                        <i class="fas fa-heartbeat"></i>
+                        <div>
+                            <h3>Physical Healthcare</h3>
+                            <p>Monitor and improve physical health</p>
+                        </div>
+                    </div>
+                    <div class="area-option" data-area="daily_exercise">
+                        <i class="fas fa-running"></i>
+                        <div>
+                            <h3>Daily Exercise</h3>
+                            <p>Track and optimize workout routines</p>
+                        </div>
+                    </div>
+                    <div class="area-option" data-area="sports_prevention">
+                        <i class="fas fa-medal"></i>
+                        <div>
+                            <h3>Sports Prevention</h3>
+                            <p>Prevent injuries during sports activities</p>
+                        </div>
+                    </div>
+                    <div class="area-option" data-area="emergency_monitoring">
+                        <i class="fas fa-first-aid"></i>
+                        <div>
+                            <h3>Emergency Monitoring</h3>
+                            <p>Critical situation detection and response</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-main">
+                <div class="dashboard-header">
+                    <h2 class="dashboard-title" id="areaTitle">Physical Healthcare Analysis</h2>
+                    <div class="dashboard-actions" id="dashboardActions">
+                        <a href="/history?area=physical_healthcare" class="action-btn secondary-btn">
+                            <i class="fas fa-history"></i> History
+                        </a>
+                        <a href="/new-analysis?area=physical_healthcare" class="action-btn primary-btn">
+                            <i class="fas fa-plus"></i> View Documentation
+                        </a>
+                    </div>
+                </div>
+
+                <div class="area-content active" id="welcome-content">
+                    <div class="welcome-message">
+                        <i class="fas fa-chart-line"></i>
+                        <h2>Welcome to Your Dashboard</h2>
+                        <p>Select an analysis area to view your reports or start a new analysis. Your insights and movement reports will help you optimize your activities and prevent injuries.</p>
+                        <a href="dashboard" class="action-btn primary-btn">
+                            <i class="fas fa-play-circle"></i> Start Your First Analysis
+                        </a>
+                    </div>
+                </div>
+
+                <div class="area-content" id="physical_healthcare-content">
+                    <div class="subsection-container">
+                        <div class="subsection-header">
+                            <h3 class="subsection-title"><i class="fas fa-walking"></i> Gait Analysis</h3>
+                            <div class="subsection-actions">
+                                <a href="gait_analysis" class="action-btn primary-btn">
+                                    <i class="fas fa-plus"></i> New Gait Analysis
+                                </a>
+                            </div>
+                        </div>
+                        <div id="gait_analysis-reports" class="subsection-grid">
+                            <div class="loading">
+                                <div class="spinner"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="subsection-container">
+                        <div class="subsection-header">
+                            <h3 class="subsection-title"><i class="fas fa-user-injured"></i> Patient Movement Recovery</h3>
+                            <div class="subsection-actions">
+                                <a href="recovery" class="action-btn primary-btn">
+                                    <i class="fas fa-plus"></i> New Recovery Analysis
+                                </a>
+                            </div>
+                        </div>
+                        <div id="patient_movement_recovery-reports" class="subsection-grid">
+                            <div class="loading">
+                                <div class="spinner"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="subsection-container">
+                        <div class="subsection-header">
+                            <h3 class="subsection-title"><i class="fas fa-hand-holding-heart"></i> Physiotherapy</h3>
+                            <div class="subsection-actions">
+                                <a href="therapy" class="action-btn primary-btn">
+                                    <i class="fas fa-plus"></i> New Therapy Analysis
+                                </a>
+                            </div>
+                        </div>
+                        <div id="physiotherapy-reports" class="subsection-grid">
+                            <div class="loading">
+                                <div class="spinner"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="area-content" id="daily_exercise-content">
+                    <div class="content-header">
+                        <h3 class="content-title">Daily Exercise Reports</h3>
+                        <div class="content-actions">
+                            <a href="/history?area=daily_exercise" class="action-btn secondary-btn">
+                                <i class="fas fa-history"></i> Full History
+                            </a>
+                            <a href="daily_exercise" class="action-btn primary-btn">
+                                <i class="fas fa-plus"></i> New Analysis
+                            </a>
+                        </div>
+                    </div>
+                    <div id="daily_exercise-reports" class="reports-grid">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="area-content" id="sports_prevention-content">
+                    <div class="content-header">
+                        <h3 class="content-title">Sports Prevention Analysis</h3>
+                        <div class="content-actions">
+                            <a href="/history?area=sports_prevention" class="action-btn secondary-btn">
+                                <i class="fas fa-history"></i> Full History
+                            </a>
+                            <a href="sports_prevention" class="action-btn primary-btn">
+                                <i class="fas fa-plus"></i> New Analysis
+                            </a>
+                        </div>
+                    </div>
+                    <div id="sports_prevention-reports" class="reports-grid">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="area-content" id="emergency_monitoring-content">
+                    <div class="content-header">
+                        <h3 class="content-title">Emergency Monitoring</h3>
+                        <div class="content-actions">
+                            <a href="/history?area=emergency_monitoring" class="action-btn secondary-btn">
+                                <i class="fas fa-history"></i> Alert History
+                            </a>
+                            <a href="emergency_monitoring" class="action-btn primary-btn">
+                                <i class="fas fa-plus"></i> Live monitor
+                            </a>
+                        </div>
+                    </div>
+                    <div id="emergency_monitoring-reports" class="reports-grid">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-        
-        <div class="insights-card">
-          <div class="card-header">
-            <h3>Performance Insights</h3>
-            <div class="time-display" id="analysis-timer">00:00</div>
-          </div>
-          <div class="insights-content">
-            <div class="insight-item">
-              <div class="insight-icon">
-                <i class="fas fa-posture"></i>
-              </div>
-              <div class="insight-text">
-                <h4>Posture Analysis</h4>
-                <p id="posture-analysis">Start analysis to see results...</p>
-              </div>
-            </div>
+    </div>
+
+    <script>
+        // Simulate user data (in a real app, this would come from your backend)
+        const userData = {
+            id: "user123",
+            name: "skvision",
+            selectedArea: "physical_healthcare",
+        };
+
+        // Simulated database with user history
+        const userHistory = {
+            user123: {
+                physical_healthcare: {
+                    gait_analysis: [
+                        {
+                            id: "report001",
+                            title: "Walking Pattern Analysis",
+                            date: "2023-06-15",
+                            accuracy: 92,
+                            improvements: 15,
+                            alerts: 3,
+                            symmetry: 87,
+                            stepLength: "Normal",
+                            status: "Good"
+                        },
+                        {
+                            id: "report002",
+                            title: "Running Gait Assessment",
+                            date: "2023-06-10",
+                            accuracy: 87,
+                            improvements: 12,
+                            alerts: 2,
+                            symmetry: 78,
+                            stepLength: "Slightly Short",
+                            status: "Warning"
+                        }
+                    ],
+                    patient_movement_recovery: [
+                        {
+                            id: "report003",
+                            title: "Post-Surgery Mobility",
+                            date: "2023-06-12",
+                            accuracy: 85,
+                            improvements: 8,
+                            alerts: 1,
+                            recoveryProgress: 65,
+                            painLevel: "Low",
+                            status: "Good"
+                        }
+                    ],
+                    physiotherapy: [
+                        {
+                            id: "report004",
+                            title: "Shoulder Rehabilitation",
+                            date: "2023-06-08",
+                            accuracy: 91,
+                            improvements: 10,
+                            alerts: 2,
+                            rangeOfMotion: "75%",
+                            painLevel: "Moderate",
+                            status: "Warning"
+                        },
+                        {
+                            id: "report005",
+                            title: "Knee Therapy Session",
+                            date: "2023-06-05",
+                            accuracy: 88,
+                            improvements: 12,
+                            alerts: 0,
+                            rangeOfMotion: "90%",
+                            painLevel: "Low",
+                            status: "Good"
+                        }
+                    ]
+                },
+                daily_exercise: [
+                    {
+                        id: "report006",
+                        title: "Morning Workout Analysis",
+                        date: "2023-06-14",
+                        minutes: 45,
+                        formScore: 95,
+                        tips: 3,
+                        calories: 320,
+                        intensity: "High"
+                    },
+                    {
+                        id: "report007",
+                        title: "Evening Yoga Session",
+                        date: "2023-06-12",
+                        minutes: 30,
+                        formScore: 88,
+                        tips: 5,
+                        calories: 180,
+                        intensity: "Medium"
+                    }
+                ],
+                sports_prevention: [
+                    {
+                        id: "report008",
+                        title: "Basketball Game Analysis",
+                        date: "2023-06-08",
+                        accuracy: 91,
+                        risks: 4,
+                        recommendations: 7,
+                        fatigueLevel: "Medium",
+                        injuryRisk: "Low"
+                    }
+                ],
+                emergency_monitoring: [
+                    {
+                        id: "report009",
+                        title: "Fall Detection Alert",
+                        date: "2023-06-03",
+                        severity: "High",
+                        responseTime: "2.3s",
+                        status: "Resolved",
+                        location: "Living Room",
+                        assistanceRequired: true
+                    }
+                ]
+            }
+        };
+
+        // DOM Elements
+        const userAvatar = document.getElementById('userAvatar');
+        const userName = document.getElementById('userName');
+        const areaOptions = document.querySelectorAll('.area-option');
+        const areaContents = document.querySelectorAll('.area-content');
+        const areaTitle = document.getElementById('areaTitle');
+        const welcomeContent = document.getElementById('welcome-content');
+        const dashboardActions = document.getElementById('dashboardActions');
+
+        // Initialize dashboard with user data
+        function initDashboard() {
+            // Set user info
+            userName.textContent = userData.name;
+            userAvatar.textContent = getInitials(userData.name);
             
-            <div class="insight-item">
-              <div class="insight-icon">
-                <i class="fas fa-running"></i>
-              </div>
-              <div class="insight-text">
-                <h4>Movement Quality</h4>
-                <p id="movement-analysis">Start analysis to see results...</p>
-              </div>
-            </div>
+            // Check if user has a selected area
+            if (userData.selectedArea) {
+                // Hide welcome message
+                welcomeContent.classList.remove('active');
+                
+                // Activate the selected area
+                activateArea(userData.selectedArea);
+            } else {
+                // Show welcome message for new users
+                welcomeContent.classList.add('active');
+                // Hide dashboard actions on welcome screen
+                dashboardActions.style.display = 'none';
+            }
+        }
+
+        // Get initials from name
+        function getInitials(name) {
+            return name.split(' ').map(word => word[0]).join('').toUpperCase();
+        }
+
+        // Activate a specific area
+        function activateArea(areaId) {
+            // Update area options
+            areaOptions.forEach(option => {
+                if (option.dataset.area === areaId) {
+                    option.classList.add('active');
+                } else {
+                    option.classList.remove('active');
+                }
+            });
             
-            <div class="insight-item">
-              <div class="insight-icon">
-                <i class="fas fa-lightbulb"></i>
-              </div>
-              <div class="insight-text">
-                <h4>Recommendations</h4>
-                <p id="recommendations">Start analysis to see recommendations...</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
+            // Update area content
+            areaContents.forEach(content => {
+                if (content.id === `${areaId}-content`) {
+                    content.classList.add('active');
+                } else {
+                    content.classList.remove('active');
+                }
+            });
+            
+            // Hide welcome content
+            welcomeContent.classList.remove('active');
+            
+            // Show dashboard actions
+            dashboardActions.style.display = 'flex';
+            
+            // Update area title
+            const areaTitles = {
+                physical_healthcare: "Physical Healthcare Analysis",
+                daily_exercise: "Daily Exercise Analysis",
+                sports_prevention: "Sports Prevention Analysis",
+                emergency_monitoring: "Emergency Monitoring"
+            };
+            
+            areaTitle.textContent = areaTitles[areaId] || "Analysis Dashboard";
+            
+            // Update action buttons with area-specific URLs
+            const historyBtn = dashboardActions.querySelector('.secondary-btn');
+            const Documentation = dashboardActions.querySelector('.primary-btn');
+            
+            historyBtn.href = `/${areaId}_history`;
+            Documentation.href = `/${areaId}_documentation`;
+            
+            // Load user history for this area
+            loadUserHistory(areaId);
+            
+            // In a real app, you would save the selected area to the user's profile
+            userData.selectedArea = areaId;
+            console.log(`Area ${areaId} selected and saved for user ${userData.id}`);
+        }
 
-    <!-- Stats Overview -->
-    <section class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-icon">
-          <i class="fas fa-posture"></i>
-        </div>
-        <div class="stat-info">
-          <h3>Posture Score</h3>
-          <div class="stat-value" id="posture-score">0%</div>
-        </div>
-        <div class="stat-progress">
-          <div class="progress-bar">
-            <div class="progress-fill" id="posture-progress" style="width: 0%"></div>
-          </div>
-        </div>
-      </div>
-      
-      <div class="stat-card">
-        <div class="stat-icon">
-          <i class="fas fa-balance-scale"></i>
-        </div>
-        <div class="stat-info">
-          <h3>Balance</h3>
-          <div class="stat-value" id="balance-score">0%</div>
-        </div>
-        <div class="stat-progress">
-          <div class="progress-bar">
-            <div class="progress-fill" id="balance-progress" style="width: 0%"></div>
-          </div>
-        </div>
-      </div>
-      
-      <div class="stat-card">
-        <div class="stat-icon">
-          <i class="fas fa-project-diagram"></i>
-        </div>
-        <div class="stat-info">
-          <h3>Symmetry</h3>
-          <div class="stat-value" id="symmetry-score">0%</div>
-        </div>
-        <div class="stat-progress">
-          <div class="progress-bar">
-            <div class="progress-fill" id="symmetry-progress" style="width: 0%"></div>
-          </div>
-        </div>
-      </div>
-      
-      <div class="stat-card">
-        <div class="stat-icon">
-          <i class="fas fa-wave-square"></i>
-        </div>
-        <div class="stat-info">
-          <h3>Motion Smoothness</h3>
-          <div class="stat-value" id="smoothness-score">0%</div>
-        </div>
-        <div class="stat-progress">
-          <div class="progress-bar">
-            <div class="progress-fill" id="smoothness-progress" style="width: 0%"></div>
-          </div>
-        </div>
-      </div>
-    </section>
+        // Load user history from database
+        function loadUserHistory(areaId) {
+            // For physical healthcare, we need to load each subsection
+            if (areaId === 'physical_healthcare') {
+                const subsections = ['gait_analysis', 'patient_movement_recovery', 'physiotherapy'];
+                subsections.forEach(subsection => {
+                    const reportsContainer = document.getElementById(`${subsection}-reports`);
+                    
+                    // Show loading spinner
+                    reportsContainer.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+                    
+                    // Simulate API call delay
+                    setTimeout(() => {
+                        const userId = userData.id;
+                        const userReports = userHistory[userId] && userHistory[userId][areaId] ? 
+                                           userHistory[userId][areaId][subsection] : [];
+                        
+                        if (userReports && userReports.length > 0) {
+                            displayReports(subsection, userReports, true);
+                        } else {
+                            displayNoReports(subsection, true);
+                        }
+                    }, 800);
+                });
+            } else {
+                // For other areas, use the standard approach
+                const reportsContainer = document.getElementById(`${areaId}-reports`);
+                
+                // Show loading spinner
+                reportsContainer.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+                
+                // Simulate API call delay
+                setTimeout(() => {
+                    const userId = userData.id;
+                    const userReports = userHistory[userId] ? userHistory[userId][areaId] : [];
+                    
+                    if (userReports && userReports.length > 0) {
+                        displayReports(areaId, userReports, false);
+                    } else {
+                        displayNoReports(areaId, false);
+                    }
+                }, 800);
+            }
+        }
 
-    <!-- Visualization Tabs -->
-    <section class="visualization-section">
-      <div class="section-header">
-        <h2>Advanced Visualizations</h2>
-        <p>Detailed analysis through interactive charts and data</p>
-      </div>
-      
-      <div class="tabs-container">
-        <div class="tabs-header">
-          <div class="tab active" data-tab="charts">
-            <i class="fas fa-chart-line"></i> Charts
-          </div>
-          <div class="tab" data-tab="landmarks">
-            <i class="fas fa-map-marker-alt"></i> Landmark Data
-          </div>
-          <div class="tab" data-tab="analysis">
-            <i class="fas fa-microscope"></i> Detailed Analysis
-          </div>
-        </div>
-        
-        <div class="tabs-content">
-          <div class="tab-pane active" id="charts-tab">
-            <div class="charts-grid">
-              <div class="chart-container">
-                <div class="chart-header">
-                  <h4>Joint Angles Over Time</h4>
-                  <div class="chart-legend">
-                    <span class="legend-item left-knee"><i class="fas fa-circle"></i> Left Knee</span>
-                    <span class="legend-item right-knee"><i class="fas fa-circle"></i> Right Knee</span>
-                  </div>
-                </div>
-                <div class="chart-wrapper">
-                  <canvas id="angle-chart"></canvas>
-                </div>
-              </div>
-              
-              <div class="chart-container">
-                <div class="chart-header">
-                  <h4>Body Movement Intensity</h4>
-                  <div class="chart-legend">
-                    <span class="legend-item torso"><i class="fas fa-circle"></i> Torso</span>
-                    <span class="legend-item head"><i class="fas fa-circle"></i> Head</span>
-                  </div>
-                </div>
-                <div class="chart-wrapper">
-                  <canvas id="movement-chart"></canvas>
-                </div>
-              </div>
-              
-              <div class="chart-container">
-                <div class="chart-header">
-                  <h4>Velocity of Extremities</h4>
-                  <div class="chart-legend">
-                    <span class="legend-item hands"><i class="fas fa-circle"></i> Hands</span>
-                    <span class="legend-item feet"><i class="fas fa-circle"></i> Feet</span>
-                  </div>
-                </div>
-                <div class="chart-wrapper">
-                  <canvas id="velocity-chart"></canvas>
-                </div>
-              </div>
-              
-              <div class="chart-container">
-                <div class="chart-header">
-                  <h4>Balance Stability Score</h4>
-                  <div class="chart-legend">
-                    <span class="legend-item stability"><i class="fas fa-circle"></i> Stability</span>
-                  </div>
-                </div>
-                <div class="chart-wrapper">
-                  <canvas id="stability-chart"></canvas>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <div class="tab-pane" id="landmarks-tab">
-            <div class="data-table-container">
-              <div class="table-header">
-                <h4>Pose Landmark Data</h4>
-                <div class="table-controls">
-                  <div class="search-box">
-                    <i class="fas fa-search"></i>
-                    <input type="text" placeholder="Search landmarks...">
-                  </div>
-                  <button class="btn btn-sm btn-outline">
-                    <i class="fas fa-download"></i> Export
-                  </button>
-                </div>
-              </div>
-              <div class="table-responsive">
-                <table class="data-table">
-                  <thead>
-                    <tr>
-                      <th>Landmark</th>
-                      <th>X</th>
-                      <th>Y</th>
-                      <th>Z</th>
-                      <th>Visibility</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody id="landmark-data">
-                    <tr>
-                      <td colspan="6" class="no-data">Start analysis to see landmark data</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-          
-          <div class="tab-pane" id="analysis-tab">
-            <div class="detailed-analysis">
-              <div class="analysis-column">
-                <h4>Movement Patterns</h4>
-                <div class="analysis-chart">
-                  <canvas id="pattern-chart"></canvas>
-                </div>
-                <div class="analysis-text">
-                  <p>Detailed analysis of movement patterns will appear here once analysis begins.</p>
-                </div>
-              </div>
-              
-              <div class="analysis-column">
-                <h4>Performance History</h4>
-                <div class="history-list">
-                  <div class="history-item">
-                    <div class="history-time">Today, 14:32</div>
-                    <div class="history-desc">Initial analysis started</div>
-                    <div class="history-score">72%</div>
-                  </div>
-                  <div class="history-item">
-                    <div class="history-time">Yesterday, 16:45</div>
-                    <div class="history-desc">Balance improvement detected</div>
-                    <div class="history-score">68%</div>
-                  </div>
-                  <div class="history-item">
-                    <div class="history-time">Oct 12, 10:15</div>
-                    <div class="history-desc">Symmetry analysis completed</div>
-                    <div class="history-score">65%</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  </main>
+        // Display reports in the UI
+        function displayReports(areaId, reports, isSubsection = false) {
+            const reportsContainer = document.getElementById(`${areaId}-reports`);
+            
+            let reportsHTML = '';
+            
+            reports.forEach(report => {
+                if (areaId === 'daily_exercise') {
+                    reportsHTML += `
+                        <div class="report-card">
+                            <div class="report-header">
+                                <div class="report-title">${report.title}</div>
+                                <div class="report-date">${formatDate(report.date)}</div>
+                            </div>
+                            <div class="report-metrics">
+                                <div class="metric">
+                                    <div class="metric-value">${report.minutes}</div>
+                                    <div class="metric-label">Minutes</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">${report.formScore}%</div>
+                                    <div class="metric-label">Form Score</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">${report.tips}</div>
+                                    <div class="metric-label">Tips</div>
+                                </div>
+                            </div>
+                            <div class="progress-container">
+                                <div class="progress-label">
+                                    <span>Intensity: ${report.intensity}</span>
+                                    <span>${report.calories} calories</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: ${getIntensityWidth(report.intensity)}"></div>
+                                </div>
+                            </div>
+                            <div class="report-actions">
+                                <a href="/report/${report.id}" class="report-btn view-btn">View Report</a>
+                                <a href="/share/${report.id}" class="report-btn share-btn">Share</a>
+                            </div>
+                        </div>
+                    `;
+                } else if (areaId === 'emergency_monitoring') {
+                    reportsHTML += `
+                        <div class="report-card">
+                            <div class="report-header">
+                                <div class="report-title">${report.title}</div>
+                                <div class="report-date">${formatDate(report.date)}</div>
+                            </div>
+                            <div class="report-metrics">
+                                <div class="metric">
+                                    <div class="metric-value" style="color: ${getSeverityColor(report.severity)}">${report.severity}</div>
+                                    <div class="metric-label">Severity</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">${report.responseTime}</div>
+                                    <div class="metric-label">Response Time</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">${report.status}</div>
+                                    <div class="metric-label">Status</div>
+                                </div>
+                            </div>
+                            <div class="progress-container">
+                                <div class="progress-label">
+                                    <span>Location: ${report.location}</span>
+                                    <span>${report.assistanceRequired ? 'Assistance Required' : 'Self-Resolved'}</span>
+                                </div>
+                            </div>
+                            <div class="report-actions">
+                                <a href="/report/${report.id}" class="report-btn view-btn">View Details</a>
+                                <a href="/share/${report.id}" class="report-btn share-btn">Share</a>
+                            </div>
+                        </div>
+                    `;
+                } else if (isSubsection) {
+                    // For physical healthcare subsections
+                    reportsHTML += `
+                        <div class="report-card">
+                            <div class="report-header">
+                                <div class="report-title">${report.title}</div>
+                                <div class="report-date">${formatDate(report.date)}</div>
+                            </div>
+                            <div class="report-metrics">
+                                <div class="metric">
+                                    <div class="metric-value">${report.accuracy}%</div>
+                                    <div class="metric-label">Accuracy</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">${report.improvements}</div>
+                                    <div class="metric-label">Improvements</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">${report.alerts}</div>
+                                    <div class="metric-label">Alerts</div>
+                                </div>
+                            </div>
+                            <div class="progress-container">
+                                <div class="progress-label">
+                                    <span>Status</span>
+                                    <span class="status-indicator ${getStatusClass(report.status)}">${report.status}</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: ${areaId === 'patient_movement_recovery' ? report.recoveryProgress : report.symmetry || report.rangeOfMotion}%"></div>
+                                </div>
+                            </div>
+                            <div class="report-actions">
+                                <a href="/report/${report.id}" class="report-btn view-btn">View Report</a>
+                                <a href="/share/${report.id}" class="report-btn share-btn">Share</a>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    // For sports prevention
+                    reportsHTML += `
+                        <div class="report-card">
+                            <div class="report-header">
+                                <div class="report-title">${report.title}</div>
+                                <div class="report-date">${formatDate(report.date)}</div>
+                            </div>
+                            <div class="report-metrics">
+                                <div class="metric">
+                                    <div class="metric-value">${report.accuracy}%</div>
+                                    <div class="metric-label">Accuracy</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">${report.recommendations}</div>
+                                    <div class="metric-label">Recommendations</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">${report.risks}</div>
+                                    <div class="metric-label">Risks</div>
+                                </div>
+                            </div>
+                            <div class="progress-container">
+                                <div class="progress-label">
+                                    <span>Fatigue Level: ${report.fatigueLevel}</span>
+                                    <span>Injury Risk: ${report.injuryRisk}</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: ${getRiskWidth(report.injuryRisk)}"></div>
+                                </div>
+                            </div>
+                            <div class="report-actions">
+                                <a href="/report/${report.id}" class="report-btn view-btn">View Report</a>
+                                <a href="/share/${report.id}" class="report-btn share-btn">Share</a>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+            
+            reportsContainer.innerHTML = reportsHTML;
+        }
 
-  <!-- Footer -->
-  <footer class="footer">
-    <div class="footer-content">
-      <div class="footer-section">
-        <h4>AI Critical Action Analyzer</h4>
-        <p>Advanced pose estimation and movement analysis powered by AI</p>
-      </div>
-      <div class="footer-section">
-        <h4>Resources</h4>
-        <a href="#">Documentation</a>
-        <a href="#">API Reference</a>
-        <a href="#">Tutorials</a>
-      </div>
-      <div class="footer-section">
-        <h4>Connect</h4>
-        <a href="#"><i class="fab fa-github"></i> GitHub</a>
-        <a href="#"><i class="fab fa-twitter"></i> Twitter</a>
-        <a href="#"><i class="fab fa-linkedin"></i> LinkedIn</a>
-      </div>
-    </div>
-    <div class="footer-bottom">
-      <p>&copy; 2023 AI Critical Action Analyzer. All rights reserved.</p>
-    </div>
-  </footer>
+        // Display no reports message
+        function displayNoReports(areaId, isSubsection = false) {
+            const reportsContainer = document.getElementById(`${areaId}-reports`);
+            
+            const areaNames = {
+                physical_healthcare: "Physical Healthcare",
+                daily_exercise: "Daily Exercise",
+                sports_prevention: "Sports Prevention",
+                emergency_monitoring: "Emergency Monitoring",
+                gait_analysis: "Gait Analysis",
+                patient_movement_recovery: "Patient Movement Recovery",
+                physiotherapy: "Physiotherapy"
+            };
+            
+            reportsContainer.innerHTML = `
+                <div class="no-reports">
+                    <i class="fas fa-${getAreaIcon(areaId)}"></i>
+                    <h3>No ${areaNames[areaId]} Reports Yet</h3>
+                    <p>Start your first analysis to get insights and recommendations.</p>
+                    <a href="/new-analysis?area=physical_healthcare&subsection=${areaId}" class="action-btn primary-btn" style="margin-top: 20px;">
+                        <i class="fas fa-plus"></i> Create First Report
+                    </a>
+                </div>
+            `;
+        }
 
-  <script type="module" src="{{ url_for('static', filename='js/action.js') }}"></script>
+        // Helper function to format date
+        function formatDate(dateString) {
+            const options = { year: 'numeric', month: 'short', day: 'numeric' };
+            return new Date(dateString).toLocaleDateString('en-US', options);
+        }
+
+        // Helper function to get severity color
+        function getSeverityColor(severity) {
+            switch(severity.toLowerCase()) {
+                case 'high': return '#e63946';
+                case 'medium': return '#f4a261';
+                case 'low': return '#2a9d8f';
+                default: return '#4361ee';
+            }
+        }
+
+        // Helper function to get area icon
+        function getAreaIcon(areaId) {
+            switch(areaId) {
+                case 'physical_healthcare': return 'heartbeat';
+                case 'daily_exercise': return 'running';
+                case 'sports_prevention': return 'medal';
+                case 'emergency_monitoring': return 'first-aid';
+                case 'gait_analysis': return 'walking';
+                case 'patient_movement_recovery': return 'user-injured';
+                case 'physiotherapy': return 'hand-holding-heart';
+                default: return 'chart-line';
+            }
+        }
+
+        // Helper function to get intensity width for progress bar
+        function getIntensityWidth(intensity) {
+            switch(intensity.toLowerCase()) {
+                case 'high': return '100%';
+                case 'medium': return '70%';
+                case 'low': return '40%';
+                default: return '50%';
+            }
+        }
+
+        // Helper function to get risk width for progress bar
+        function getRiskWidth(risk) {
+            switch(risk.toLowerCase()) {
+                case 'high': return '100%';
+                case 'medium': return '70%';
+                case 'low': return '40%';
+                default: return '50%';
+            }
+        }
+
+        // Helper function to get status class
+        function getStatusClass(status) {
+            switch(status.toLowerCase()) {
+                case 'good': return 'status-good';
+                case 'warning': return 'status-warning';
+                case 'critical': return 'status-critical';
+                default: return 'status-good';
+            }
+        }
+
+        // Event listeners for area selection
+        areaOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                const areaId = option.dataset.area;
+                activateArea(areaId);
+            });
+        });
+
+        // Initialize the dashboard when the page loads
+        document.addEventListener('DOMContentLoaded', initDashboard);
+    </script>
 </body>
 </html>

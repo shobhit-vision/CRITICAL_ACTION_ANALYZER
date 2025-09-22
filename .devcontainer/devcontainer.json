@@ -19,11 +19,20 @@
     "codespaces": {
       "openFiles": [
         "templates/index.html",
+        "base.html",
         "templates/dashboard.html",
         "templates/settings.html",
         "templates/login.html",
         "templates/signup.html",
-        "templates/gait_analysis.html"
+        "templates/gait_analysis.html",
+        "templates/daily_exercise.html",
+        "templates/emergency_monitoring_documentation.html",
+        "templates/emergency_monitoring.html",
+        "templates/physical_healthcare_documentation.html",
+        "templates/recovery.html",
+        "templates/therapy.html",
+        "templates/sports_prevention_documentation.html",
+        "templates/sports_prevention.html"
       ]
     },
     "vscode": {

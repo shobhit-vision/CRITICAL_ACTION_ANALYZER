@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Active Page Indicator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        header {
+            background: #4361ee;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+        
+        .nav-container {
+            background: #f8f9fa;
+            padding: 0 20px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        nav {
+            display: flex;
+            justify-content: center;
+        }
+        
+        .nav-item {
+            padding: 15px 25px;
+            text-decoration: none;
+            color: #495057;
+            font-weight: 500;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-item:hover {
+            color: #4361ee;
+            background: rgba(67, 97, 238, 0.05);
+        }
+        
+        .nav-item.active {
+            color: #4361ee;
+            font-weight: 600;
+        }
+        
+        .nav-item.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: #4361ee;
+            border-radius: 3px 3px 0 0;
+        }
+        
+        .content {
+            padding: 30px;
+            min-height: 300px;
+        }
+        
+        .page-title {
+            font-size: 24px;
+            color: #343a40;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .page-content {
+            line-height: 1.6;
+            color: #495057;
+        }
+        
+        .code-container {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 30px;
+            border-left: 4px solid #4361ee;
+        }
+        
+        .code-title {
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: #343a40;
+        }
+        
+        pre {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .instructions {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e7f5ff;
+            border-radius: 6px;
+            border-left: 4px solid #4cc9f0;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #6c757d;
+            font-size: 14px;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        @media (max-width: 600px) {
+            nav {
+                flex-direction: column;
+            }
+            
+            .nav-item {
+                text-align: center;
+                border-bottom: 1px solid #e9ecef;
+            }
+            
+            .nav-item.active::after {
+                height: 100%;
+                width: 4px;
+                left: 0;
+                top: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Active Page Indicator</h1>
+            <div class="subtitle">A simple template to show which page is currently active</div>
+        </header>
+        
+        <div class="nav-container">
+            <nav>
+                <a href="#" class="nav-item">Home</a>
+                <a href="#" class="nav-item">About</a>
+                <a href="#" class="nav-item active">Services</a>
+                <a href="#" class="nav-item">Portfolio</a>
+                <a href="#" class="nav-item">Contact</a>
+            </nav>
+        </div>
+        
+        <div class="content">
+            <h2 class="page-title">Services Page</h2>
+            <div class="page-content">
+                <p>This page demonstrates how to indicate the active page in a navigation menu. The "Services" item is highlighted with a different color and an underline to show it's the current page.</p>
+                
+                <div class="instructions">
+                    <p><strong>How to use:</strong> Add the "active" class to the navigation item corresponding to the current page.</p>
+                </div>
+                
+                <div class="code-container">
+                    <div class="code-title">HTML Implementation:</div>
+                    <pre>&lt;nav&gt;
+  &lt;a href="index.html" class="nav-item"&gt;Home&lt;/a&gt;
+  &lt;a href="about.html" class="nav-item"&gt;About&lt;/a&gt;
+  &lt;a href="services.html" class="nav-item active"&gt;Services&lt;/a&gt;
+  &lt;a href="portfolio.html" class="nav-item"&gt;Portfolio&lt;/a&gt;
+  &lt;a href="contact.html" class="nav-item"&gt;Contact&lt;/a&gt;
+&lt;/nav&gt;</pre>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Active Page Indicator Template &copy; 2023</p>
+        </footer>
+    </div>
+
+    <script>
+        // Simple script to demonstrate active page switching
+        document.addEventListener('DOMContentLoaded', function() {
+            const navItems = document.querySelectorAll('.nav-item');
+            
+            navItems.forEach(item => {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Remove active class from all items
+                    navItems.forEach(navItem => {
+                        navItem.classList.remove('active');
+                    });
+                    
+                    // Add active class to clicked item
+                    this.classList.add('active');
+                    
+                    // Update page title to reflect the active page
+                    const pageTitle = document.querySelector('.page-title');
+                    pageTitle.textContent = this.textContent + ' Page';
+                });
+            });
+        });
+    </script>
+</body>
+</html>
