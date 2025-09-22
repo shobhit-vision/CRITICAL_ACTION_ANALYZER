@@ -355,17 +355,17 @@ def therapy():
 def daily_exercise_documentation():
     return render_template("daily_exercise_documentation.html", title="Daily Exercise - CRITICAL ACTION ANALYZER")
 
-@app.route("/emergency_monitoring_documentation.html")
+@app.route("/emergency_monitoring_documentation")
 @login_required
 def emergency_monitoring_documentation():
     return render_template("emergency_monitoring_documentation.html", title="Daily Exercise - CRITICAL ACTION ANALYZER")
 
-@app.route("/physical_healthcare_documentation.html")
+@app.route("/physical_healthcare_documentation")
 @login_required
 def physical_healthcare_documentation():
     return render_template("physical_healthcare_documentation.html", title="Physical healthcare documentation - CRITICAL ACTION ANALYZER")
 
-@app.route("/sports_prevention_documentation.html")
+@app.route("/sports_prevention_documentation")
 @login_required
 def sports_prevention_documentation():
     return render_template("sports_prevention_documentation.html", title="Daily Exercise - CRITICAL ACTION ANALYZER")

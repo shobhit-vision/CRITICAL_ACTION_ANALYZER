@@ -19,7 +19,6 @@
     "codespaces": {
       "openFiles": [
         "templates/index.html",
-        "base.html",
         "templates/dashboard.html",
         "templates/settings.html",
         "templates/login.html",
