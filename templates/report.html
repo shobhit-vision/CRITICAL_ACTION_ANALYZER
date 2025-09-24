@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movement Analysis Report</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .report-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+
+        .report-header {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white;
+            padding: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .report-title h2 {
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+        }
+
+        .report-meta {
+            text-align: right;
+        }
+
+        .report-content {
+            padding: 30px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+            padding: 25px;
+            border-radius: 15px;
+            background: #f8f9fa;
+            border-left: 5px solid #667eea;
+        }
+
+        .section h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.4rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .section h3 i {
+            margin-right: 10px;
+            font-size: 1.2rem;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .metric-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .metric-label {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+
+        .risk-indicator {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            color: white;
+            font-weight: bold;
+            margin: 5px;
+        }
+
+        .risk-low { background: #27ae60; }
+        .risk-medium { background: #f39c12; }
+        .risk-high { background: #e74c3c; }
+
+        .benefits-list, .recommendations-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .benefits-list li, .recommendations-list li {
+            padding: 10px 0;
+            border-bottom: 1px solid #ecf0f1;
+            display: flex;
+            align-items: center;
+        }
+
+        .benefits-list li:before {
+            content: "✓";
+            color: #27ae60;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .recommendations-list li:before {
+            content: "➤";
+            color: #667eea;
+            margin-right: 10px;
+        }
+
+        .body-region-indicator {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .region-tag {
+            padding: 8px 15px;
+            border-radius: 20px;
+            background: #3498db;
+            color: white;
+            font-size: 0.9rem;
+        }
+
+        .region-tag.active {
+            background: #27ae60;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 2s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .report-header {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .report-meta {
+                text-align: center;
+                margin-top: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏃‍♂️ Movement Analysis Report</h1>
+            <p>AI-powered insights into your movement patterns and health</p>
+        </div>
+
+        <div class="report-card">
+            <div class="report-header">
+                <div class="report-title">
+                    <h2>Comprehensive Movement Analysis</h2>
+                    <p>Generated in real-time using AI</p>
+                </div>
+                <div class="report-meta">
+                    <div id="report-date">Loading...</div>
+                    <div id="analysis-duration"></div>
+                </div>
+            </div>
+
+            <div class="report-content">
+                <div id="loading" class="loading">
+                    <div class="spinner"></div>
+                    <p>Analyzing your movement patterns...</p>
+                </div>
+
+                <div id="report-content" style="display: none;">
+                    <!-- Sections will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class MovementReport {
+            constructor() {
+                this.llmResponse = null;
+                this.analyzer = new MovementAnalyzer();
+            }
+
+            // Simulate receiving LLM response (replace with actual API call)
+            async generateReport(landmarksData, userContext = {}) {
+                // Show loading
+                document.getElementById('loading').style.display = 'block';
+                document.getElementById('report-content').style.display = 'none';
+
+                // Extract features
+                const features = this.analyzer.extractFeatures(landmarksData);
+                const prompt = this.analyzer.generateLLMPrompt(features, userContext);
+
+                // Simulate API call to LLM (replace with actual implementation)
+                try {
+                    const response = await this.callLLMAPI(prompt);
+                    this.llmResponse = typeof response === 'string' ? JSON.parse(response) : response;
+                    this.displayReport();
+                } catch (error) {
+                    console.error('Error generating report:', error);
+                    this.displayError();
+                }
+            }
+
+            async callLLMAPI(prompt) {
+                // Simulate API delay
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                // This is where you'd make actual API call to your LLM
+                // For demo purposes, return mock response
+                return JSON.stringify({
+                    visible_body_regions: {
+                        primary: "Full Body",
+                        details: ["Upper Body", "Lower Body", "Core"],
+                        confidence: 95
+                    },
+                    movement_summary: {
+                        total_movements: 156,
+                        left_bends: 12,
+                        right_bends: 10,
+                        symmetry_score: 88,
+                        stability_rating: "Good"
+                    },
+                    movement_patterns_analysis: {
+                        has_clear_patterns: true,
+                        pattern_type: "Rhythmic Exercise",
+                        risk_level: "Low",
+                        riskable_movements: ["Minor asymmetry in shoulder movement"],
+                        recommendations: "Maintain current form, focus on shoulder symmetry"
+                    },
+                    risk_assessment: {
+                        overall_risk: "Low",
+                        high_risk_areas: [],
+                        medium_risk_areas: ["Left shoulder"],
+                        injury_probability: 15
+                    },
+                    medical_insights: {
+                        positive_aspects: ["Good spinal alignment", "Excellent range of motion"],
+                        concerns: ["Slight shoulder imbalance"],
+                        professional_advice: "Continue current routine, consider shoulder strengthening exercises"
+                    },
+                    physical_benefits: [
+                        "Improved cardiovascular health",
+                        "Enhanced muscle coordination",
+                        "Better joint mobility",
+                        "Increased core stability"
+                    ],
+                    recommendations: [
+                        "Incorporate shoulder symmetry exercises 3x weekly",
+                        "Maintain current exercise frequency",
+                        "Consider yoga for improved flexibility",
+                        "Monitor left shoulder movement during exercises"
+                    ]
+                });
+            }
+
+            displayReport() {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('report-content').style.display = 'block';
+                
+                // Update report date
+                document.getElementById('report-date').textContent = new Date().toLocaleDateString();
+                document.getElementById('analysis-duration').textContent = 'Analysis: Real-time';
+
+                const reportContent = document.getElementById('report-content');
+                reportContent.innerHTML = this.generateReportHTML();
+            }
+
+            generateReportHTML() {
+                if (!this.llmResponse) return '';
+
+                const data = this.llmResponse;
+                
+                return `
+                    <!-- Visible Regions Section -->
+                    <div class="section">
+                        <h3>👁️ Visible Body Regions Analysis</h3>
+                        <div class="body-region-indicator">
+                            <span class="region-tag active">${data.visible_body_regions.primary}</span>
+                            ${data.visible_body_regions.details.map(region => 
+                                `<span class="region-tag">${region}</span>`
+                            ).join('')}
+                        </div>
+                        <p>Confidence: <strong>${data.visible_body_regions.confidence}%</strong></p>
+                    </div>
+
+                    <!-- Movement Summary -->
+                    <div class="section">
+                        <h3>📊 Movement Summary</h3>
+                        <div class="metrics-grid">
+                            <div class="metric-card">
+                                <div class="metric-value">${data.movement_summary.total_movements}</div>
+                                <div class="metric-label">Total Movements</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-value">${data.movement_summary.symmetry_score}%</div>
+                                <div class="metric-label">Symmetry Score</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-value">${data.movement_summary.left_bends}</div>
+                                <div class="metric-label">Left Bends</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-value">${data.movement_summary.right_bends}</div>
+                                <div class="metric-label">Right Bends</div>
+                            </div>
+                        </div>
+                        <p>Overall Stability: <strong>${data.movement_summary.stability_rating}</strong></p>
+                    </div>
+
+                    <!-- Patterns Analysis -->
+                    <div class="section">
+                        <h3>🔍 Movement Patterns Analysis</h3>
+                        <p><strong>Pattern Detection:</strong> ${data.movement_patterns_analysis.has_clear_patterns ? 'Clear patterns identified' : 'Random movements'}</p>
+                        <p><strong>Pattern Type:</strong> ${data.movement_patterns_analysis.pattern_type}</p>
+                        <p><strong>Risk Level:</strong> <span class="risk-indicator risk-${data.movement_patterns_analysis.risk_level.toLowerCase()}">${data.movement_patterns_analysis.risk_level}</span></p>
+                        ${data.movement_patterns_analysis.riskable_movements.length > 0 ? 
+                            `<p><strong>Areas for Improvement:</strong> ${data.movement_patterns_analysis.riskable_movements.join(', ')}</p>` : 
+                            '<p>✅ No significant riskable movements detected</p>'
+                        }
+                    </div>
+
+                    <!-- Risk Assessment -->
+                    <div class="section">
+                        <h3>⚠️ Risk Assessment</h3>
+                        <p><strong>Overall Injury Risk:</strong> <span class="risk-indicator risk-${data.risk_assessment.overall_risk.toLowerCase()}">${data.risk_assessment.overall_risk}</span></p>
+                        <p><strong>Injury Probability:</strong> ${data.risk_assessment.injury_probability}%</p>
+                        ${data.risk_assessment.high_risk_areas.length > 0 ? 
+                            `<p><strong>High Risk Areas:</strong> ${data.risk_assessment.high_risk_areas.join(', ')}</p>` : 
+                            '<p>✅ No high-risk areas identified</p>'
+                        }
+                        ${data.risk_assessment.medium_risk_areas.length > 0 ? 
+                            `<p><strong>Monitor These Areas:</strong> ${data.risk_assessment.medium_risk_areas.join(', ')}</p>` : 
+                            ''
+                        }
+                    </div>
+
+                    <!-- Medical Insights -->
+                    <div class="section">
+                        <h3>🏥 Medical Insights</h3>
+                        <p><strong>Positive Aspects:</strong> ${data.medical_insights.positive_aspects.join(', ')}</p>
+                        ${data.medical_insights.concerns.length > 0 ? 
+                            `<p><strong>Areas of Concern:</strong> ${data.medical_insights.concerns.join(', ')}</p>` : 
+                            '<p>✅ No significant concerns detected</p>'
+                        }
+                        <p><strong>Professional Advice:</strong> ${data.medical_insights.professional_advice}</p>
+                    </div>
+
+                    <!-- Physical Benefits -->
+                    <div class="section">
+                        <h3>💪 Physical Benefits</h3>
+                        <ul class="benefits-list">
+                            ${data.physical_benefits.map(benefit => `<li>${benefit}</li>`).join('')}
+                        </ul>
+                    </div>
+
+                    <!-- Recommendations -->
+                    <div class="section">
+                        <h3>📋 Recommendations</h3>
+                        <ul class="recommendations-list">
+                            ${data.recommendations.map(rec => `<li>${rec}</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+
+            displayError() {
+                document.getElementById('loading').innerHTML = `
+                    <div style="color: #e74c3c; text-align: center;">
+                        <h3>❌ Error Generating Report</h3>
+                        <p>Please try again or check your connection</p>
+                        <button onclick="location.reload()" style="margin-top: 20px; padding: 10px 20px; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                            Retry Analysis
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        // Initialize and demo (replace with your actual landmarks data)
+        const report = new MovementReport();
+
+        // Demo with sample data after page load
+        window.addEventListener('load', () => {
+            // Sample landmarks data (replace with actual MediaPipe data)
+            const sampleLandmarks = Array.from({length: 33}, (_, i) => ({
+                x: Math.random() * 0.1 - 0.05,
+                y: Math.random() * 0.1 - 0.05,
+                z: Math.random() * 0.1 - 0.05,
+                visibility: 0.9
+            }));
+
+            const userContext = {
+                age: 30,
+                fitness_level: "Intermediate",
+                goals: ["Improve flexibility", "Build strength"],
+                exercise_type: "Full Body Workout"
+            };
+
+            report.generateReport(sampleLandmarks, userContext);
+        });
+    </script>
+
+    <!-- Include the feature.js file -->
+    <script type="module" src="{{ url_for('static', filename='js/feature.js') }}"></script>
+</body>
+</html>

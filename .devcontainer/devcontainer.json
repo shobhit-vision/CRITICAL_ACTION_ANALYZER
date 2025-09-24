@@ -27,6 +27,7 @@
         "templates/signup.html",
         "templates/gait_analysis.html",
         "templates/daily_exercise.html",
+        "templates/report.html",
         "templates/emergency_monitoring_documentation.html",
         "templates/emergency_monitoring.html",
         "templates/physical_healthcare_documentation.html",

@@ -1,209 +1,297 @@
-import { startCamera, stopCamera, resetData } from './camera_manager.js';
+import { startCamera, stopCamera, resetData, isCameraActive } from './camera_manager.js';
 import { 
   startAnalysisTimer, 
   stopAnalysisTimer,
-  cameraOverlay,
+  toggleCameraOverlay,
   poseHistory,
   charts
 } from './ui.js';
 
 // Global variables for button states
-let isCameraRunning = false;
 let analysisTimer = null;
 
-// Initialize all button functionality
-function initializeButtons() {
+// Safely get DOM element
+function getElement(id) {
   try {
-    // Get button references
-    const startButton = document.getElementById('start-camera');
-    const stopButton = document.getElementById('stop-camera');
-    const resetButton = document.getElementById('reset-data');
-    const captureButton = document.getElementById('capture-frame');
-    const overlayStartBtn = document.getElementById('overlay-start-btn');
-    const heroAnalysisBtn = document.getElementById('hero-analysis-btn');
+    return document.getElementById(id);
+  } catch (error) {
+    console.warn(`Error getting element ${id}:`, error);
+    return null;
+  }
+}
 
-    // Set up event listeners for existing buttons
-    if (startButton) {
-      startButton.addEventListener('click', handleStart);
-    }
-    
-    if (stopButton) {
-      stopButton.addEventListener('click', handleStop);
-      stopButton.disabled = true;
-    }
-    
-    if (resetButton) {
-      resetButton.addEventListener('click', handleReset);
-    }
-    
-    if (captureButton) {
-      captureButton.disabled = true;
-      // Add capture functionality if needed
-      // captureButton.addEventListener('click', handleCapture);
-    }
-    
-    // Overlay start button (index page)
-    if (overlayStartBtn) {
-      overlayStartBtn.addEventListener('click', () => {
-        if (startButton) startButton.click();
+// Update button states
+function updateButtonStates() {
+  const isRunning = isCameraActive();
+  const stopButton = getElement('stop-camera');
+  const startButton = getElement('start-camera');
+  const captureButton = getElement('capture-frame');
+
+  if (stopButton) {
+    stopButton.disabled = !isRunning;
+    stopButton.style.opacity = isRunning ? '1' : '0.5';
+  }
+
+  if (startButton) {
+    startButton.disabled = isRunning;
+    startButton.style.opacity = isRunning ? '0.5' : '1';
+  }
+
+  if (captureButton) {
+    captureButton.disabled = !isRunning;
+    captureButton.style.opacity = isRunning ? '1' : '0.5';
+  }
+}
+
+// Reset metrics display
+function resetMetricsDisplay() {
+  try {
+    // Reset score displays
+    const scoreElements = {
+      'posture-score': '0%',
+      'balance-score': '0%', 
+      'symmetry-score': '0%',
+      'motion-score': '0%',
+      'smoothness-score': '0%'
+    };
+
+    Object.entries(scoreElements).forEach(([id, value]) => {
+      const element = getElement(id);
+      if (element) element.textContent = value;
+    });
+
+    // Reset progress bars
+    const progressBars = [
+      'posture-progress',
+      'balance-progress', 
+      'symmetry-progress',
+      'motion-progress',
+      'smoothness-progress'
+    ];
+
+    progressBars.forEach(id => {
+      const element = getElement(id);
+      if (element) element.style.width = '0%';
+    });
+
+    // Reset landmarks count
+    const landmarksCount = getElement('landmarks-count');
+    if (landmarksCount) landmarksCount.textContent = '0/0';
+
+    // Reset confidence score
+    const confidenceScore = getElement('confidence-score');
+    if (confidenceScore) confidenceScore.textContent = '0%';
+
+    // Reset landmark table
+    const landmarkTable = getElement('landmark-data');
+    if (landmarkTable) landmarkTable.innerHTML = '';
+
+  } catch (error) {
+    console.warn('Error resetting metrics display:', error);
+  }
+}
+
+// Reset charts function
+function resetCharts() {
+  try {
+    // Check if charts object exists and has chart instances
+    if (charts && typeof charts === 'object') {
+      Object.values(charts).forEach(chart => {
+        if (chart && typeof chart.destroy === 'function') {
+          chart.destroy();
+        }
+      });
+      
+      // Clear charts object
+      Object.keys(charts).forEach(key => {
+        delete charts[key];
       });
     }
-    
-    // Hero analysis button (index page)
-    if (heroAnalysisBtn) {
-      heroAnalysisBtn.addEventListener('click', () => {
-        const analysisSection = document.getElementById('analysis');
-        if (analysisSection) {
-          analysisSection.scrollIntoView({ behavior: 'smooth' });
-          setTimeout(() => {
-            if (startButton) startButton.click();
-          }, 1000);
+
+    // Reinitialize charts if on dashboard page
+    const angleChart = getElement('angle-chart');
+    if (angleChart) {
+      import('./chart_manager.js').then(module => {
+        if (module.initializeCharts) {
+          module.initializeCharts();
         }
       });
     }
-    
-    console.log('Button functionality initialized successfully');
+
   } catch (error) {
-    console.warn('Error initializing buttons:', error.message);
+    console.warn('Error resetting charts:', error);
   }
 }
 
 // Handle start button click
-function handleStart() {
+async function handleStart() {
   try {
-    startCamera();
-    if (cameraOverlay) cameraOverlay.classList.add("hidden");
-    startAnalysisTimer();
+    if (isCameraActive()) return;
+
+    console.log('Starting camera...');
+    
+    // Show loading state
+    updateButtonStates();
+    
+    // Hide camera overlay
+    toggleCameraOverlay(false);
+    
+    // Start camera
+    await startCamera();
+    
+    // Start analysis timer
+    analysisTimer = startAnalysisTimer();
     
     // Update button states
-    const stopButton = document.getElementById('stop-camera');
-    const startButton = document.getElementById('start-camera');
-    const captureButton = document.getElementById('capture-frame');
+    updateButtonStates();
     
-    if (stopButton) stopButton.disabled = false;
-    if (startButton) startButton.disabled = true;
-    if (captureButton) captureButton.disabled = false;
-    
-    isCameraRunning = true;
+    console.log('Camera started successfully');
+
   } catch (error) {
-    console.warn('Error starting camera:', error.message);
+    console.error('Error starting camera:', error);
+    toggleCameraOverlay(true);
+    updateButtonStates();
   }
 }
 
 // Handle stop button click
 function handleStop() {
   try {
+    if (!isCameraActive()) return;
+
+    console.log('Stopping camera...');
+    
+    // Stop camera
     stopCamera();
-    if (cameraOverlay) cameraOverlay.classList.remove("hidden");
+    
+    // Stop analysis timer
     stopAnalysisTimer();
+    analysisTimer = null;
+    
+    // Show camera overlay
+    toggleCameraOverlay(true);
     
     // Update button states
-    const stopButton = document.getElementById('stop-camera');
-    const startButton = document.getElementById('start-camera');
-    const captureButton = document.getElementById('capture-frame');
+    updateButtonStates();
     
-    if (stopButton) stopButton.disabled = true;
-    if (startButton) startButton.disabled = false;
-    if (captureButton) captureButton.disabled = true;
-    
-    isCameraRunning = false;
+    console.log('Camera stopped successfully');
+
   } catch (error) {
-    console.warn('Error stopping camera:', error.message);
+    console.error('Error stopping camera:', error);
   }
 }
 
 // Handle reset button click
 function handleReset() {
   try {
+    console.log('Resetting data...');
+    
+    // Stop camera if running
+    if (isCameraActive()) {
+      handleStop();
+    }
+    
     // Clear pose history
-    if (poseHistory && poseHistory.length) {
+    if (poseHistory && Array.isArray(poseHistory)) {
       poseHistory.length = 0;
     }
     
+    // Reset data in camera manager
     resetData();
-    handleStop(); // Stop camera when resetting
     
-    // Reset metrics on index page if elements exist
-    const postureScore = document.getElementById('posture-score');
-    const balanceScore = document.getElementById('balance-score');
-    const symmetryScore = document.getElementById('symmetry-score');
-    const motionScore = document.getElementById('motion-score');
-    
-    if (postureScore) postureScore.textContent = '0%';
-    if (balanceScore) balanceScore.textContent = '0%';
-    if (symmetryScore) symmetryScore.textContent = '0%';
-    if (motionScore) motionScore.textContent = '0%';
-    
-    // Reset progress bars
-    const postureProgress = document.getElementById('posture-progress');
-    const balanceProgress = document.getElementById('balance-progress');
-    const symmetryProgress = document.getElementById('symmetry-progress');
-    const motionProgress = document.getElementById('motion-progress');
-    
-    if (postureProgress) postureProgress.style.width = '0%';
-    if (balanceProgress) balanceProgress.style.width = '0%';
-    if (symmetryProgress) symmetryProgress.style.width = '0%';
-    if (motionProgress) motionProgress.style.width = '0%';
-    
-    // Reset charts if on dashboard page (check if charts exist)
+    // Reset UI displays
+    resetMetricsDisplay();
     resetCharts();
     
     console.log('Data reset successfully');
+
   } catch (error) {
-    console.warn('Error resetting data:', error.message);
+    console.error('Error resetting data:', error);
   }
 }
 
-// Reset charts function (only for dashboard page)
-function resetCharts() {
+// Handle capture frame (placeholder for future functionality)
+function handleCapture() {
+  if (!isCameraActive()) return;
+  
   try {
-    // Check if we're on the dashboard page by looking for chart elements
-    const angleChart = document.getElementById('angle-chart');
-    const movementChart = document.getElementById('movement-chart');
-    const velocityChart = document.getElementById('velocity-chart');
-    const stabilityChart = document.getElementById('stability-chart');
+    console.log('Capture frame functionality to be implemented');
     
-    // Reset charts only if they exist (dashboard page)
-    if (angleChart || movementChart || velocityChart || stabilityChart) {
-      // Reset each chart if it exists in the charts object
-      if (charts.angle) {
-        charts.angle.data.datasets.forEach(dataset => {
-          dataset.data = [];
-        });
-        charts.angle.update();
-      }
-      
-      if (charts.movement) {
-        charts.movement.data.datasets.forEach(dataset => {
-          dataset.data = [];
-        });
-        charts.movement.update();
-      }
-      
-      if (charts.velocity) {
-        charts.velocity.data.datasets.forEach(dataset => {
-          dataset.data = [];
-        });
-        charts.velocity.update();
-      }
-      
-      if (charts.stability) {
-        charts.stability.data.datasets.forEach(dataset => {
-          dataset.data = [];
-        });
-        charts.stability.update();
-      }
-      
-      console.log('Charts reset successfully');
-    }
   } catch (error) {
-    console.warn('Error resetting charts:', error.message);
+    console.error('Error capturing frame:', error);
   }
 }
+
+// Initialize all button functionality
+function initializeButtons() {
+  try {
+    // Get button references
+    const buttons = {
+      'start-camera': handleStart,
+      'stop-camera': handleStop,
+      'reset-data': handleReset,
+      'capture-frame': handleCapture,
+      'overlay-start-btn': () => getElement('start-camera')?.click(),
+      'hero-analysis-btn': handleHeroAnalysis
+    };
+
+    // Set up event listeners for existing buttons
+    Object.entries(buttons).forEach(([id, handler]) => {
+      const button = getElement(id);
+      if (button) {
+        button.addEventListener('click', handler);
+        console.log(`Button ${id} initialized`);
+      }
+    });
+
+    // Set initial button states
+    updateButtonStates();
+
+    console.log('All buttons initialized successfully');
+
+  } catch (error) {
+    console.error('Error initializing buttons:', error);
+  }
+}
+
+// Handle hero analysis button click
+function handleHeroAnalysis() {
+  try {
+    const analysisSection = getElement('analysis');
+    if (analysisSection) {
+      analysisSection.scrollIntoView({ behavior: 'smooth' });
+      setTimeout(() => {
+        handleStart();
+      }, 1000);
+    } else {
+      handleStart();
+    }
+  } catch (error) {
+    console.error('Error handling hero analysis:', error);
+  }
+}
+
+// Handle page visibility change
+function handleVisibilityChange() {
+  if (document.hidden && isCameraActive()) {
+    console.log('Page hidden, stopping camera to save resources');
+    handleStop();
+  }
+}
+
+// Initialize visibility change handler
+document.addEventListener('visibilitychange', handleVisibilityChange);
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', () => {
+  if (isCameraActive()) {
+    handleStop();
+  }
+});
 
 // Get camera running state
 function getCameraState() {
-  return isCameraRunning;
+  return isCameraActive();
 }
 
 export {
@@ -211,5 +299,6 @@ export {
   handleStart,
   handleStop,
   handleReset,
-  getCameraState
+  getCameraState,
+  updateButtonStates
 };

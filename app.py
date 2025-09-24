@@ -355,6 +355,12 @@ def therapy():
 def daily_exercise_documentation():
     return render_template("daily_exercise_documentation.html", title="Daily Exercise - CRITICAL ACTION ANALYZER")
 
+@app.route("/report")
+@login_required
+def report():
+    return render_template("report.html", title="Daily Exercise - CRITICAL ACTION ANALYZER")
+
+
 @app.route("/emergency_monitoring_documentation")
 @login_required
 def emergency_monitoring_documentation():
