@@ -87,6 +87,33 @@
     </div>
   </section>
 
+  <!-- Time Selection Bar -->
+  <section class="time-selection-section">
+    <div class="section-header">
+      <h2>Analysis Duration</h2>
+      <p>Select how long you want the analysis to run</p>
+    </div>
+    
+    <div class="time-selection-container">
+      <div class="time-slider-container">
+        <input type="range" id="analysis-time-slider" min="5" max="10" value="5" step="1" class="time-slider">
+        <div class="time-labels">
+          <span>5s</span>
+          <span>6s</span>
+          <span>7s</span>
+          <span>8s</span>
+          <span>9s</span>
+          <span>10s</span>
+        </div>
+      </div>
+      
+      <div class="time-display">
+        <div class="time-value" id="selected-time-value">5 seconds</div>
+        <div class="time-description">Analysis will run for <span id="time-display">5</span> seconds</div>
+      </div>
+    </div>
+  </section>
+
   <!-- Main Content -->
   <main class="main-container">
     <!-- Camera and Analysis Section -->
@@ -253,6 +280,15 @@
             </div>
             <div class="progress-label">Optimal: 80%+</div>
           </div>
+        </div>
+      </div>
+      <!-- Report Generation Button -->
+      <div class="report-section" id="report-section" style="display: none;">
+        <div class="report-container">
+          <button class="btn btn-report" id="generate-report-btn">
+            <i class="fas fa-chart-bar"></i> Generate Detailed Report
+          </button>
+          <p class="report-description">Get a comprehensive analysis of your movement metrics and recommendations</p>
         </div>
       </div>
     </section>

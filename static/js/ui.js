@@ -164,6 +164,11 @@ export function updateMetrics(analysis) {
   if (!analysis) return;
   
   try {
+    // Show report button when analysis data is available
+    if (analysis && analysis.landmarks && window.timeReportManager) {
+      window.timeReportManager.showReportButton();
+    }
+    
     updatePostureMetrics(analysis.torsoStability);
     updateBalanceMetrics(analysis.balance);
     updateSymmetryMetrics(analysis.symmetry);

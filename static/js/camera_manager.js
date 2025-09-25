@@ -1,3 +1,4 @@
+// camera_manager.js
 import { generateInsights } from './ui.js';
 import { initializePose, onResultsPose } from './pose_analysis.js';
 
@@ -85,6 +86,11 @@ export async function startCamera() {
     }
     
     isCameraRunning = true;
+
+    // START ANALYSIS TIMER WITH SELECTED DURATION - Use global function
+    if (window.timeReportManager) {
+      window.timeReportManager.startAnalysisTimerWithDuration();
+    }
     
     // Start periodic analysis
     analysisInterval = setInterval(() => {
@@ -158,6 +164,11 @@ export function stopCamera() {
     console.log('Stopping camera...');
     
     isCameraRunning = false;
+
+    // STOP ANALYSIS TIMER - Use global function
+    if (window.timeReportManager) {
+      window.timeReportManager.stopAnalysisTimer();
+    }
     
     const videoElement = getElement('.input_video');
     
@@ -232,6 +243,28 @@ export function resetData() {
 export function isCameraActive() {
   return isCameraRunning;
 }
+
+// Function to stop camera analysis (called automatically when duration completes)
+export function stopCameraAnalysis() {
+  console.log('Automatically stopping camera analysis due to duration completion');
+  stopCamera();
+  
+  // Show completion message
+  const completionMessage = document.getElementById('analysis-completion-message');
+  if (completionMessage) {
+    completionMessage.style.display = 'block';
+    completionMessage.textContent = `Analysis completed successfully (${window.timeReportManager ? window.timeReportManager.getAnalysisDuration() : 5} seconds)`;
+    
+    // Hide message after 5 seconds
+    setTimeout(() => {
+      completionMessage.style.display = 'none';
+    }, 5000);
+  }
+}
+
+// Make camera state available globally
+window.isCameraActive = isCameraActive;
+window.stopCameraAnalysis = stopCameraAnalysis;
 
 export {
   pose,

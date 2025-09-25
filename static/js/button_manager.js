@@ -1,7 +1,8 @@
-import { startCamera, stopCamera, resetData, isCameraActive } from './camera_manager.js';
+// button_manager.js
+import { startCamera, stopCamera, resetData, isCameraActive, stopCameraAnalysis } from './camera_manager.js';
 import { 
   startAnalysisTimer, 
-  stopAnalysisTimer,
+  stopAnalysisTimer as stopUITimer,
   toggleCameraOverlay,
   poseHistory,
   charts
@@ -139,8 +140,10 @@ async function handleStart() {
     // Start camera
     await startCamera();
     
-    // Start analysis timer
-    analysisTimer = startAnalysisTimer();
+    // Start analysis timer with duration
+    if (window.timeReportManager) {
+      window.timeReportManager.startAnalysisTimerWithDuration();
+    }
     
     // Update button states
     updateButtonStates();
@@ -165,7 +168,10 @@ function handleStop() {
     stopCamera();
     
     // Stop analysis timer
-    stopAnalysisTimer();
+    if (window.timeReportManager) {
+      window.timeReportManager.stopAnalysisTimer();
+    }
+    stopUITimer();
     analysisTimer = null;
     
     // Show camera overlay
@@ -198,6 +204,11 @@ function handleReset() {
     
     // Reset data in camera manager
     resetData();
+    
+    // Hide report button
+    if (window.timeReportManager) {
+      window.timeReportManager.hideReportButton();
+    }
     
     // Reset UI displays
     resetMetricsDisplay();
