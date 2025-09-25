@@ -117,7 +117,6 @@ document.addEventListener('DOMContentLoaded', function() {
 // Global variables for time and report management
 let analysisDuration = 5; // Default 5 seconds
 let analysisDataAvailable = false;
-let analysisTimer = null;
 let analysisStartTime = null;
 
 // Initialize time selection and report functionality
@@ -126,6 +125,7 @@ function initializeTimeReportManager() {
     initializeReportButton();
     console.log('Time and Report Manager initialized');
 }
+
 
 // Initialize time selection slider
 function initializeTimeSelection() {
@@ -229,52 +229,19 @@ function hideReportButton() {
     console.log('Report button hidden');
 }
 
-// Start analysis timer with selected duration
-function startAnalysisTimerWithDuration() {
-    if (analysisTimer) {
-        clearTimeout(analysisTimer);
-        console.log('Cleared existing analysis timer');
-    }
-
+// Set global start time (called by camera_manager.js before starting camera)
+function setAnalysisStartTime() {
     analysisStartTime = Date.now();
-    // Set global start time for sync with other modules (e.g., pose_feature.js)
     window.analysisStartTime = analysisStartTime;
-    console.log(`Analysis timer started for ${analysisDuration} seconds at ${new Date(analysisStartTime).toLocaleTimeString()}`);
-
-    // Set timeout to automatically stop analysis after selected duration
-    analysisTimer = setTimeout(() => {
-        console.log('Analysis timer expired - duration completed');
-        if (window.isCameraActive && window.isCameraActive()) {
-            console.log('Analysis duration completed - stopping camera');
-            if (window.stopCameraAnalysis) {
-                window.stopCameraAnalysis();
-            } else {
-                console.warn('stopCameraAnalysis not available - manual stop required');
-            }
-        }
-        // Clear timer after firing
-        analysisTimer = null;
-    }, analysisDuration * 1000);
-
-    // Show report button after starting analysis
-    showReportButton();
-
-    return analysisTimer;
+    console.log(`Analysis start time set: ${new Date(analysisStartTime).toLocaleTimeString()}`);
 }
 
-// Stop analysis timer
+// Stop analysis timer (clear any remnants)
 function stopAnalysisTimer() {
-    if (analysisTimer) {
-        clearTimeout(analysisTimer);
-        analysisTimer = null;
-        console.log('Analysis timer stopped manually');
-    }
-
     if (analysisStartTime) {
         const elapsedTime = (Date.now() - analysisStartTime) / 1000;
         console.log(`Analysis stopped after ${elapsedTime.toFixed(1)} seconds`);
         analysisStartTime = null;
-        // Clear global start time
         window.analysisStartTime = null;
     }
 }
@@ -317,12 +284,12 @@ function collectReportData() {
         timestamp: new Date().toISOString()
     };
 
-    // Get pose history if available
+    // Get pose history if available (assuming global from pose_analysis.js)
     const poseData = window.poseHistory ? window.poseHistory.slice() : [];
 
-    // Get complete pose analysis data (structured JSON per second) - fixed to use correct global/method
+    // Get complete pose analysis data (fallback if window.getCompletePoseAnalysisData not available)
     let poseAnalysisData = {};
-    if (window.getCompletePoseAnalysisData) {
+    if (typeof window.getCompletePoseAnalysisData === 'function') {
         try {
             poseAnalysisData = window.getCompletePoseAnalysisData();
         } catch (error) {
@@ -336,7 +303,7 @@ function collectReportData() {
         metrics: metrics,
         duration: durationInfo,
         poseData: poseData,
-        poseAnalysisData: poseAnalysisData,  // New: Include per-second JSON data
+        poseAnalysisData: poseAnalysisData,
         insights: generateInsights()
     };
 }
@@ -359,9 +326,8 @@ function getCurrentMetrics() {
     return metrics;
 }
 
-// Generate insights based on current data
+// Generate insights based on current data (later i add llm model here)
 function generateInsights() {
-    // This would typically contain more sophisticated analysis
     return {
         summary: "Movement analysis completed successfully.",
         recommendations: [
@@ -402,21 +368,15 @@ function addTimeChangeAnimation() {
     }
 }
 
-// Make functions available globally for other modules (enhanced with missing methods)
+// Make functions available globally for other modules
 window.timeReportManager = {
     showReportButton,
     hideReportButton,
-    startAnalysisTimerWithDuration,
+    setAnalysisStartTime,  // Called by camera_manager.js
     stopAnalysisTimer,
     getAnalysisDuration,
     isAnalysisDataAvailable,
-    collectReportData,  // Added: For stopCameraAnalysis to log data
-    getCompleteAnalysisData: () => {  // Added: Wrapper for pose data (calls getCompletePoseAnalysisData if available)
-        if (window.getCompletePoseAnalysisData) {
-            return window.getCompletePoseAnalysisData();
-        }
-        return window.poseAnalysisData || {};
-    }
+    collectReportData
 };
 
 // Initialize when DOM is loaded

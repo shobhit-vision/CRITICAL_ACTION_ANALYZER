@@ -1,420 +1,554 @@
-import { generateInsights } from './ui.js';
+// camera_manager.js
+// Enhanced with proper pose history management
+
+import { generateInsights, updateCameraStatus, toggleCameraOverlay, poseHistory, MAX_HISTORY } from './ui.js';
 import { initializePose, onResultsPose } from './pose_analysis.js';
 
-let camera = null;
-let pose = null;
-let analysisInterval = null;
-let preciseTimerInterval = null; // New: For precise time checking
-let isCameraRunning = false;
-let manualFrameInterval = null; // For fallback method
-
-// Safely get DOM element
-function getElement(selector) {
-  try {
-    return document.querySelector(selector);
-  } catch (error) {
-    console.warn(`Error getting element ${selector}:`, error);
-    return null;
-  }
-}
-
-// Update button states (Start/Stop Analysis buttons) - Fixed with flexible selectors and debug
-function updateButtonStates(running) {
-  // Use classes for flexibility (change to IDs if needed, e.g., '#start-analysis-btn')
-  const startBtn = getElement('.start-analysis-btn');
-  const stopBtn = getElement('.stop-analysis-btn');
-
-  if (!startBtn || !stopBtn) {
-    // Debug: Log all potential button elements to help identify correct selectors
-    const allButtons = document.querySelectorAll('button');
-    const buttonTexts = Array.from(allButtons).map(btn => `${btn.id || btn.className || 'no-id'}: "${btn.textContent.trim()}"`).join(', ');
-    console.warn('Start/Stop buttons not found - skipping state update. Found buttons:', buttonTexts || 'None');
-    console.warn('Suggestion: Add classes "start-analysis-btn" and "stop-analysis-btn" to your HTML buttons, or update selectors in updateButtonStates().');
-    return;
-  }
-
-  if (running) {
-    // Starting: Disable start, enable stop, add active class to stop
-    startBtn.disabled = true;
-    startBtn.classList.remove('active');
-    stopBtn.disabled = false;
-    stopBtn.classList.add('active');
-    console.log('Button states updated: Start disabled, Stop enabled');
-  } else {
-    // Stopping: Enable start, disable stop, remove active classes
-    startBtn.disabled = false;
-    startBtn.classList.add('active'); // Optional: Highlight start as ready
-    stopBtn.disabled = true;
-    stopBtn.classList.remove('active');
-    console.log('Button states updated: Start enabled, Stop disabled');
-  }
-}
-
-// Start precise timer interval for accurate duration checking
-function startPreciseTimerCheck(duration) {
-  if (preciseTimerInterval) {
-    clearInterval(preciseTimerInterval);
-  }
-
-  console.log(`Starting precise timer check every 500ms for ${duration}s duration`);
-  preciseTimerInterval = setInterval(() => {
-    if (!isCameraRunning || !window.analysisStartTime) return;
-
-    const elapsed = (Date.now() - window.analysisStartTime) / 1000;
-    console.log(`Precise timer check: ${elapsed.toFixed(2)}s elapsed`);
-    
-    if (elapsed >= duration) {
-      console.log(`Precise timer: ${elapsed.toFixed(2)}s >= ${duration}s - stopping camera`);
-      stopCameraAnalysis();
-      clearInterval(preciseTimerInterval);
-      preciseTimerInterval = null;
-    }
-  }, 500); // Check every 500ms for precision within 0.5s
-}
-
-// Stop precise timer interval
-function stopPreciseTimerCheck() {
-  if (preciseTimerInterval) {
-    clearInterval(preciseTimerInterval);
-    preciseTimerInterval = null;
-    console.log('Precise timer interval stopped');
-  }
-}
-
-// Start camera function
-export async function startCamera() {
-  try {
-    if (isCameraRunning) {
-      console.log('Camera is already running');
-      return;
+class CameraManager {
+    constructor() {
+        this.camera = null;
+        this.pose = null;
+        this.autoStopInterval = null;
+        this.manualFrameInterval = null;
+        this.isRunning = false;
+        this.analysisStartTime = null;
+        this.insightsInterval = null;
+        this.lastPoseSaveTime = 0;
+        this.poseSaveInterval = 1000; // Save pose data every second
     }
 
-    console.log('Starting camera...');
-    
-    // Update button states on start
-    updateButtonStates(true);
-    
-    // Set global start time immediately for sync (before camera init)
-    if (window.timeReportManager && typeof window.timeReportManager.startAnalysisTimerWithDuration === 'function') {
-      window.timeReportManager.startAnalysisTimerWithDuration(); // This sets window.analysisStartTime
-    } else {
-      // Fallback: Set start time manually
-      window.analysisStartTime = Date.now();
-      console.warn('timeReportManager not available - setting manual start time');
-    }
-    
-    // Initialize pose if not already done
-    if (!pose) {
-      pose = initializePose();
-      if (!pose) {
-        throw new Error('Failed to initialize MediaPipe Pose');
-      }
-    }
-    
-    const videoElement = getElement('.input_video');
-    if (!videoElement) {
-      throw new Error('Video element not found');
-    }
-    
-    // Get user media
-    const stream = await navigator.mediaDevices.getUserMedia({ 
-      video: { 
-        width: { ideal: 640 }, 
-        height: { ideal: 480 },
-        facingMode: 'user'
-      } 
-    });
-    
-    videoElement.srcObject = stream;
-    
-    // Wait for video to be ready
-    await new Promise((resolve) => {
-      videoElement.onloadedmetadata = () => {
-        videoElement.play();
-        resolve();
-      };
-    });
-    
-    // Set up camera utils with proper error handling
-    if (window.Camera) {
-      camera = new window.Camera(videoElement, {
-        onFrame: async () => {
-          try {
-            // Only send frame if pose is initialized and camera is running
-            if (pose && isCameraRunning && videoElement.readyState === videoElement.HAVE_ENOUGH_DATA) {
-              await pose.send({ image: videoElement });
+    // Safe DOM element retrieval
+    getElement(selector) {
+        try {
+            if (selector.startsWith('#')) {
+                return document.getElementById(selector.slice(1));
             }
-          } catch (error) {
-            console.error('Error processing frame:', error);
-          }
-        },
-        width: 640,
-        height: 480
-      });
-      
-      await camera.start();
-      console.log('Camera started with MediaPipe Camera utils');
-    } else {
-      console.warn('Camera utils not available, using fallback method');
-      // Fallback: manually process frames
-      startManualFrameProcessing(videoElement);
-    }
-    
-    isCameraRunning = true;
-
-    // START ANALYSIS TIMER WITH SELECTED DURATION
-    let duration = 30; // Default
-    if (window.timeReportManager && typeof window.timeReportManager.getAnalysisDuration === 'function') {
-      duration = window.timeReportManager.getAnalysisDuration();
-      console.log(`Starting analysis timer for ${duration} seconds`);
-    } else {
-      console.warn('timeReportManager not available - using default 30s timer');
-    }
-
-    // Start precise timer check for accurate stopping
-    startPreciseTimerCheck(duration);
-    
-    // Start periodic analysis (reduced to 1s, with integrated time check as backup)
-    analysisInterval = setInterval(() => {
-      try {
-        generateInsights();
-        // Backup time check (now every 1s)
-        if (window.analysisStartTime) {
-          const elapsed = (Date.now() - window.analysisStartTime) / 1000;
-          if (elapsed >= duration && isCameraActive()) {
-            console.log(`Backup timer check: ${elapsed}s >= ${duration}s - stopping`);
-            stopCameraAnalysis();
-          }
+            return document.querySelector(selector);
+        } catch (error) {
+            console.warn(`Element not found: ${selector}`, error);
+            return null;
         }
-      } catch (error) {
-        console.error('Error generating insights:', error);
-      }
-    }, 1000); // Reduced from 3000ms to 1000ms for better precision
-    
-    console.log('Camera started successfully');
-    
-  } catch (error) {
-    console.error("Error starting camera: ", error);
-    isCameraRunning = false;
-    // Revert button states on error
-    updateButtonStates(false);
-    // Stop precise timer on error
-    stopPreciseTimerCheck();
-    
-    // Show user-friendly error message
-    const errorOverlay = document.getElementById('camera-error');
-    if (errorOverlay) {
-      errorOverlay.style.display = 'block';
-      errorOverlay.innerHTML = `Cannot access camera: ${error.message}`;
     }
-    
-    throw error;
-  }
-}
 
-// Fallback frame processing when Camera utils not available
-function startManualFrameProcessing(videoElement) {
-  // Clear any existing interval
-  if (manualFrameInterval) {
-    clearInterval(manualFrameInterval);
-  }
-  
-  let processing = false;
-  
-  const processFrame = async () => {
-    if (!isCameraRunning || processing) return;
-    
-    processing = true;
-    try {
-      if (pose && videoElement.readyState === videoElement.HAVE_ENOUGH_DATA) {
-        await pose.send({ image: videoElement });
-      }
-    } catch (error) {
-      console.error('Error in manual frame processing:', error);
+    // Update button states consistently
+    updateButtonStates(running) {
+        const buttons = {
+            start: this.getElement('#start-camera'),
+            stop: this.getElement('#stop-camera'),
+            capture: this.getElement('#capture-frame'),
+            reset: this.getElement('#reset-data')
+        };
+
+        if (!buttons.start || !buttons.stop) {
+            console.warn('Start/Stop buttons not found');
+            return;
+        }
+
+        Object.entries(buttons).forEach(([key, button]) => {
+            if (!button) return;
+            
+            const isStartButton = key === 'start';
+            const shouldEnable = running ? !isStartButton : isStartButton;
+            
+            button.disabled = !shouldEnable;
+            button.classList.toggle('disabled', !shouldEnable);
+            button.style.opacity = shouldEnable ? '1' : '0.5';
+        });
+
+        console.log(`Buttons updated: ${running ? 'Start disabled, Stop enabled' : 'Start enabled, Stop disabled'}`);
     }
-    processing = false;
-  };
-  
-  // Process frames at ~30fps
-  manualFrameInterval = setInterval(processFrame, 33);
-}
 
-// Stop manual frame processing
-function stopManualFrameProcessing() {
-  if (manualFrameInterval) {
-    clearInterval(manualFrameInterval);
-    manualFrameInterval = null;
-  }
-}
-
-// Stop camera function
-export function stopCamera() {
-  try {
-    if (!isCameraRunning) {
-      console.log('Camera is not running');
-      return;
+    // Get analysis duration from timeReportManager or default
+    getAnalysisDuration() {
+        if (window.timeReportManager?.getAnalysisDuration) {
+            return window.timeReportManager.getAnalysisDuration();
+        }
+        console.warn('timeReportManager unavailable - using default 5s');
+        return 5;
     }
-    
-    console.log('Stopping camera...');
-    
-    isCameraRunning = false;
 
-    // Update button states on stop
-    updateButtonStates(false);
+    // Initialize pose history for new session
+    initializePoseHistory() {
+        // Clear existing history
+        poseHistory.length = 0;
+        this.lastPoseSaveTime = 0;
+        console.log('Pose history initialized');
+    }
 
-    // Stop precise timer check
-    stopPreciseTimerCheck();
+    // Save pose data at regular intervals (once per second)
+    savePoseData(analysis) {
+        if (!analysis) return;
+        
+        const currentTime = Date.now();
+        
+        // Save pose data every second or if it's the first frame
+        if (currentTime - this.lastPoseSaveTime >= this.poseSaveInterval || this.lastPoseSaveTime === 0) {
+            try {
+                // Create a timestamped pose entry
+                const poseEntry = {
+                    ...analysis,
+                    timestamp: currentTime,
+                    elapsedTime: (currentTime - this.analysisStartTime) / 1000,
+                    frameId: poseHistory.length + 1
+                };
+                
+                // Add to history
+                poseHistory.push(poseEntry);
+                
+                // Maintain history size limit
+                if (poseHistory.length > MAX_HISTORY) {
+                    poseHistory.shift(); // Remove oldest entry
+                }
+                
+                this.lastPoseSaveTime = currentTime;
+                
+                // Log every 5 seconds for monitoring
+                if (poseHistory.length % 5 === 0) {
+                    console.log(`Pose history: ${poseHistory.length} entries, latest at ${poseEntry.elapsedTime.toFixed(1)}s`);
+                }
+                
+            } catch (error) {
+                console.error('Error saving pose data:', error);
+            }
+        }
+    }
 
-    // STOP ANALYSIS TIMER - Use global function
-    if (window.timeReportManager && typeof window.timeReportManager.stopAnalysisTimer === 'function') {
-      window.timeReportManager.stopAnalysisTimer();
+    // Get current pose history statistics
+    getPoseHistoryStats() {
+        return {
+            totalEntries: poseHistory.length,
+            duration: poseHistory.length > 0 ? 
+                (poseHistory[poseHistory.length - 1].elapsedTime - poseHistory[0].elapsedTime) : 0,
+            latestTimestamp: poseHistory.length > 0 ? poseHistory[poseHistory.length - 1].timestamp : null
+        };
     }
-    
-    const videoElement = getElement('.input_video');
-    
-    // Stop the camera stream
-    if (videoElement && videoElement.srcObject) {
-      videoElement.srcObject.getTracks().forEach(track => {
-        track.stop();
-      });
-      videoElement.srcObject = null;
+
+    // Start auto-stop timer
+    startAutoStopTimer(duration) {
+        this.stopAutoStopTimer();
+
+        console.log(`Auto-stop timer started: ${duration}s`);
+        this.autoStopInterval = setInterval(() => {
+            if (!this.isRunning || !this.analysisStartTime) return;
+
+            const elapsed = (Date.now() - this.analysisStartTime) / 1000;
+            console.log(`Timer: ${elapsed.toFixed(1)}s / ${duration}s`);
+
+            if (elapsed >= duration) {
+                console.log(`Duration complete: ${elapsed.toFixed(1)}s - stopping analysis`);
+                this.stopCameraAnalysis();
+            }
+        }, 1000);
     }
-    
-    // Stop camera utils if available and properly initialized
-    if (camera && typeof camera.stop === 'function') {
-      camera.stop();
-      console.log('MediaPipe Camera utils stopped');
+
+    // Stop auto-stop timer
+    stopAutoStopTimer() {
+        if (this.autoStopInterval) {
+            clearInterval(this.autoStopInterval);
+            this.autoStopInterval = null;
+            console.log('Auto-stop timer cleared');
+        }
     }
-    
+
+    // Initialize camera stream
+    async initializeCameraStream() {
+        const videoElement = this.getElement('.input_video');
+        if (!videoElement) {
+            throw new Error('Video element not found');
+        }
+
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                width: { ideal: 640 },
+                height: { ideal: 480 },
+                facingMode: 'user'
+            }
+        });
+
+        videoElement.srcObject = stream;
+
+        await new Promise((resolve, reject) => {
+            videoElement.onloadedmetadata = () => {
+                videoElement.play().then(resolve).catch(reject);
+            };
+            videoElement.onerror = reject;
+        });
+
+        return videoElement;
+    }
+
+    // Initialize MediaPipe Pose
+    async initializePoseDetection() {
+        if (this.pose) {
+            console.log('Pose detection already initialized');
+            return this.pose;
+        }
+
+        this.pose = await initializePose();
+        if (!this.pose) {
+            throw new Error('Failed to initialize MediaPipe Pose');
+        }
+
+        this.pose.setOptions({
+            modelComplexity: 1,
+            smoothLandmarks: true,
+            enableSegmentation: false,
+            smoothSegmentation: true,
+            minDetectionConfidence: 0.5,
+            minTrackingConfidence: 0.5
+        });
+
+        this.pose.onResults(onResultsPose);
+        console.log('MediaPipe Pose initialized successfully');
+        return this.pose;
+    }
+
+    // Start MediaPipe camera with frame processing
+    async startMediaPipeCamera(videoElement) {
+        if (typeof window.Camera !== 'undefined') {
+            this.camera = new window.Camera(videoElement, {
+                onFrame: async () => {
+                    if (this.pose && this.isRunning && videoElement.readyState >= 2) {
+                        await this.pose.send({ image: videoElement });
+                    }
+                },
+                width: 640,
+                height: 480
+            });
+            await this.camera.start();
+            console.log('MediaPipe Camera started');
+            return true;
+        }
+        return false;
+    }
+
+    // Fallback: Manual frame processing
+    startManualFrameProcessing(videoElement) {
+        this.stopManualFrameProcessing();
+
+        console.warn('MediaPipe Camera unavailable - using manual processing');
+        let isProcessing = false;
+
+        this.manualFrameInterval = setInterval(async () => {
+            if (!this.isRunning || isProcessing || videoElement.readyState < 2) return;
+
+            isProcessing = true;
+            try {
+                await this.pose.send({ image: videoElement });
+            } catch (error) {
+                console.error('Frame processing error:', error);
+            }
+            isProcessing = false;
+        }, 33);
+    }
+
     // Stop manual frame processing
-    stopManualFrameProcessing();
-    
-    // Clear analysis interval
-    if (analysisInterval) {
-      clearInterval(analysisInterval);
-      analysisInterval = null;
+    stopManualFrameProcessing() {
+        if (this.manualFrameInterval) {
+            clearInterval(this.manualFrameInterval);
+            this.manualFrameInterval = null;
+        }
     }
-    
-    // Reset camera variable
-    camera = null;
-    
-    console.log('Camera stopped successfully');
-    
-  } catch (error) {
-    console.error('Error stopping camera:', error);
-  }
-}
 
-// Reset data function
-export function resetData() {
-  try {
-    console.log('Resetting camera data...');
-    
-    stopCamera();
-    
-    // Stop precise timer on reset
-    stopPreciseTimerCheck();
-    
-    // Reset pose instance
-    pose = null;
-    
-    // Reset dashboard-specific elements if they exist
-    const elementsToReset = {
-      'smoothness-score': '0%',
-      'posture-analysis': 'Start analysis to see results...',
-      'movement-analysis': 'Start analysis to see results...',
-      'recommendations': 'Start analysis to see recommendations...'
-    };
-    
-    Object.entries(elementsToReset).forEach(([id, text]) => {
-      const element = document.getElementById(id);
-      if (element) element.textContent = text;
-    });
-    
-    // Clear landmark table
-    const landmarkData = document.getElementById('landmark-data');
-    if (landmarkData) landmarkData.innerHTML = '';
-    
-    // Hide report button on reset
-    if (window.timeReportManager && typeof window.timeReportManager.hideReportButton === 'function') {
-      window.timeReportManager.hideReportButton();
+    // Main start function
+    async startCamera() {
+        if (this.isRunning) {
+            console.log('Camera already running');
+            return;
+        }
+
+        try {
+            console.log('Starting camera analysis...');
+            this.isRunning = true;
+            this.updateButtonStates(true);
+
+            // Initialize pose history for new session
+            this.initializePoseHistory();
+
+            // Set analysis start time
+            this.analysisStartTime = Date.now();
+            if (window.timeReportManager?.setAnalysisStartTime) {
+                window.timeReportManager.setAnalysisStartTime();
+            }
+
+            const duration = this.getAnalysisDuration();
+            
+            // Initialize components
+            const videoElement = await this.initializeCameraStream();
+            await this.initializePoseDetection();
+
+            // Start camera processing
+            const mediaPipeSuccess = await this.startMediaPipeCamera(videoElement);
+            if (!mediaPipeSuccess) {
+                this.startManualFrameProcessing(videoElement);
+            }
+
+            // Start auto-stop timer
+            this.startAutoStopTimer(duration);
+
+            // Start insights generation
+            this.startInsightsGeneration();
+
+            // Update UI
+            updateCameraStatus?.('Camera Active');
+            toggleCameraOverlay?.(false);
+
+            console.log(`Camera started successfully. Auto-stop in ${duration}s`);
+
+        } catch (error) {
+            console.error('Camera start failed:', error);
+            this.handleStartError(error);
+        }
     }
-    
-    console.log('Camera data reset successfully');
-    
-  } catch (error) {
-    console.error('Error in camera reset:', error);
-  }
+
+    // Handle camera start errors
+    handleStartError(error) {
+        this.isRunning = false;
+        this.updateButtonStates(false);
+        this.cleanup();
+
+        updateCameraStatus?.('Camera Error');
+        toggleCameraOverlay?.(true);
+
+        const overlay = this.getElement('#camera-overlay');
+        if (overlay) {
+            overlay.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Error: ${error.message}`;
+            overlay.style.display = 'block';
+        }
+
+        alert(`Camera start failed: ${error.message}. Check permissions and try again.`);
+    }
+
+    // Start periodic insights generation
+    startInsightsGeneration() {
+        this.stopInsightsGeneration();
+        
+        this.insightsInterval = setInterval(() => {
+            if (this.isRunning && generateInsights) {
+                generateInsights();
+                
+                // Log pose history stats periodically
+                const stats = this.getPoseHistoryStats();
+                if (stats.totalEntries > 0) {
+                    console.log(`Pose History: ${stats.totalEntries} entries over ${stats.duration.toFixed(1)}s`);
+                }
+            }
+        }, 2000);
+    }
+
+    // Stop insights generation
+    stopInsightsGeneration() {
+        if (this.insightsInterval) {
+            clearInterval(this.insightsInterval);
+            this.insightsInterval = null;
+        }
+    }
+
+    // Stop camera analysis
+    stopCamera() {
+        if (!this.isRunning) {
+            console.log('Camera not running');
+            return;
+        }
+
+        console.log('Stopping camera analysis...');
+        this.isRunning = false;
+        this.updateButtonStates(false);
+        
+        // Log final pose history stats
+        const stats = this.getPoseHistoryStats();
+        console.log(`Session completed: ${stats.totalEntries} pose entries over ${stats.duration.toFixed(1)}s`);
+        
+        this.cleanup();
+        console.log('Camera stopped successfully');
+    }
+
+    // Cleanup resources
+    cleanup() {
+        this.stopAutoStopTimer();
+        this.stopManualFrameProcessing();
+        this.stopInsightsGeneration();
+
+        if (window.timeReportManager?.stopAnalysisTimer) {
+            window.timeReportManager.stopAnalysisTimer();
+        }
+
+        const videoElement = this.getElement('.input_video');
+        if (videoElement?.srcObject) {
+            videoElement.srcObject.getTracks().forEach(track => track.stop());
+            videoElement.srcObject = null;
+            videoElement.pause();
+        }
+
+        if (this.camera?.stop) {
+            this.camera.stop();
+            this.camera = null;
+        }
+
+        if (this.pose?.close) {
+            this.pose.close();
+            this.pose = null;
+        }
+
+        updateCameraStatus?.('Camera Off');
+        toggleCameraOverlay?.(true);
+    }
+
+    // Auto-stop analysis when duration completes
+    stopCameraAnalysis() {
+        console.log('Auto-stopping analysis (duration complete)');
+
+        if (this.analysisStartTime) {
+            const elapsed = (Date.now() - this.analysisStartTime) / 1000;
+            console.log(`Analysis completed: ${elapsed.toFixed(1)}s elapsed`);
+        }
+
+        this.prepareAnalysisReport();
+        this.showCompletionToast();
+        this.stopCamera();
+    }
+
+    // Prepare analysis report data
+    prepareAnalysisReport() {
+        if (!window.timeReportManager) return;
+
+        window.timeReportManager.isAnalysisDataAvailable = true;
+
+        // Pass pose history to report manager
+        if (window.timeReportManager.setPoseHistory) {
+            window.timeReportManager.setPoseHistory([...poseHistory]);
+        }
+
+        if (window.timeReportManager.collectReportData) {
+            try {
+                const data = window.timeReportManager.collectReportData();
+                console.log('Analysis data collected:', data);
+            } catch (error) {
+                console.warn('Error collecting report data:', error);
+            }
+        }
+
+        if (window.timeReportManager.showReportButton) {
+            window.timeReportManager.showReportButton();
+        }
+    }
+
+    // Show completion toast
+    showCompletionToast() {
+        let toast = this.getElement('#analysis-toast');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'analysis-toast';
+            toast.style.cssText = `
+                position: fixed; top: 20px; right: 20px; 
+                background: #4CAF50; color: white; padding: 15px; 
+                border-radius: 5px; z-index: 1000; display: none;
+            `;
+            document.body.appendChild(toast);
+        }
+
+        const duration = this.getAnalysisDuration();
+        const stats = this.getPoseHistoryStats();
+        toast.textContent = `Analysis complete (${duration}s). ${stats.totalEntries} pose samples collected.`;
+        toast.style.display = 'block';
+        
+        setTimeout(() => {
+            toast.style.display = 'none';
+        }, 5000);
+    }
+
+    // Reset all data including pose history
+    resetData() {
+        console.log('Resetting camera data...');
+        
+        if (this.isRunning) {
+            this.stopCamera();
+        }
+
+        this.cleanup();
+        this.initializePoseHistory(); // Clear pose history
+
+        // Reset UI elements
+        const elements = {
+            '#landmarks-count': '0',
+            '#confidence-score': '0%',
+            '#frame-rate': '0 FPS'
+        };
+
+        Object.entries(elements).forEach(([selector, value]) => {
+            const element = this.getElement(selector);
+            if (element) element.textContent = value;
+        });
+
+        // Hide report
+        if (window.timeReportManager?.hideReportButton) {
+            window.timeReportManager.hideReportButton();
+        }
+
+        console.log('Camera data reset complete');
+    }
+
+    // Check if camera is active
+    isCameraActive() {
+        return this.isRunning;
+    }
+
+    // Get current pose history (for external access)
+    getPoseHistory() {
+        return [...poseHistory]; // Return copy to prevent mutation
+    }
 }
 
-// Get camera running state
-export function isCameraActive() {
-  return isCameraRunning;
+// Create singleton instance
+const cameraManager = new CameraManager();
+
+// Event listeners
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden && cameraManager.isRunning) {
+        console.log('Page hidden - pausing camera');
+        cameraManager.stopCamera();
+    }
+});
+
+window.addEventListener('beforeunload', () => {
+    if (cameraManager.isRunning) {
+        cameraManager.stopCamera();
+    }
+});
+
+// Export functions
+export async function startCamera() {
+    return cameraManager.startCamera();
 }
 
-// Function to stop camera analysis (called automatically when duration completes)
+export function stopCamera() {
+    return cameraManager.stopCamera();
+}
+
 export function stopCameraAnalysis() {
-  console.log('Automatically stopping camera analysis due to duration completion');
-  
-  // Log final elapsed time for debugging
-  if (window.analysisStartTime) {
-    const finalElapsed = (Date.now() - window.analysisStartTime) / 1000;
-    console.log(`Final elapsed time on stop: ${finalElapsed.toFixed(2)}s`);
-  }
-  
-  // Ensure data availability flag is set (for report button)
-  if (window.timeReportManager) {
-    window.timeReportManager.isAnalysisDataAvailable = true; // Force true if data collected
-    // Show/ensure report button visibility after auto-stop
-    if (typeof window.timeReportManager.showReportButton === 'function') {
-      window.timeReportManager.showReportButton();
-    }
-  }
-  
-  // Check if pose data was collected (e.g., history length > 0)
-  if (window.poseHistory && window.poseHistory.length > 0) {
-    console.log(`Analysis data collected: ${window.poseHistory.length} frames`);
-  }
-  
-  // Get complete analysis data before stopping (fixed to use correct method)
-  let analysisData = {};
-  if (window.timeReportManager && typeof window.timeReportManager.collectReportData === 'function') {
-    try {
-      analysisData = window.timeReportManager.collectReportData();
-    } catch (error) {
-      console.warn('Error collecting report data:', error);
-    }
-  } else {
-    console.warn('timeReportManager.collectReportData not available');
-  }
-  
-  console.log('Complete Analysis Data:', JSON.stringify(analysisData, null, 2));
-  
-  stopCamera(); // This will update button states and stop timers
-  
-  // Show completion message
-  const completionMessage = document.getElementById('analysis-completion-message');
-  if (completionMessage) {
-    const duration = window.timeReportManager ? window.timeReportManager.getAnalysisDuration() : 5;
-    completionMessage.style.display = 'block';
-    completionMessage.textContent = `Analysis completed successfully (${duration} seconds). Data logged to console. Generate report below.`;
-    
-    // Hide message after 5 seconds
-    setTimeout(() => {
-      completionMessage.style.display = 'none';
-    }, 5000);
-  }
-  
-  // DO NOT hide report button here - keep it visible for user to generate report
-  // (Only hide on explicit reset)
+    return cameraManager.stopCameraAnalysis();
 }
 
-// Make camera state available globally
-window.isCameraActive = isCameraActive;
-window.stopCameraAnalysis = stopCameraAnalysis;
+export function resetData() {
+    return cameraManager.resetData();
+}
 
-export {
-  pose,
-  camera,
-  updateButtonStates // Export for use in ui.js if needed
-};
+export function isCameraActive() {
+    return cameraManager.isCameraActive();
+}
+
+export function updateButtonStates(running) {
+    return cameraManager.updateButtonStates(running);
+}
+
+export function getPoseHistory() {
+    return cameraManager.getPoseHistory();
+}
+
+// Global exposure
+window.cameraManager = cameraManager;
+window.startCamera = startCamera;
+window.stopCamera = stopCamera;
+window.stopCameraAnalysis = stopCameraAnalysis;
+window.isCameraActive = isCameraActive;
+window.getPoseHistory = getPoseHistory;

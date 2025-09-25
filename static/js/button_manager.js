@@ -184,11 +184,11 @@ async function handleStart() {
     await startCamera();
     
     // Start UI analysis timer (fallback if timeReportManager not available)
-    if (window.timeReportManager) {
-      window.timeReportManager.startAnalysisTimerWithDuration();
-    } else {
-      startAnalysisTimer();
-    }
+    // if (window.timeReportManager) {
+    //   window.timeReportManager.startAnalysisTimerWithDuration();
+    // } else {
+    //   startAnalysisTimer();
+    // }
     
     // Update button states after start
     setTimeout(() => {
