@@ -5,8 +5,10 @@ import {
   stopAnalysisTimer as stopUITimer,
   toggleCameraOverlay,
   poseHistory,
-  charts
+  charts,
+  generateInsights
 } from './ui.js';
+import { resetPoseData, initializePoseFeatureAnalysis } from './pose_feature.js';
 
 // Global variables for button states
 let analysisTimer = null;
@@ -27,6 +29,7 @@ function updateButtonStates() {
   const stopButton = getElement('stop-camera');
   const startButton = getElement('start-camera');
   const captureButton = getElement('capture-frame');
+  const resetButton = getElement('reset-data');
 
   if (stopButton) {
     stopButton.disabled = !isRunning;
@@ -41,6 +44,11 @@ function updateButtonStates() {
   if (captureButton) {
     captureButton.disabled = !isRunning;
     captureButton.style.opacity = isRunning ? '1' : '0.5';
+  }
+
+  if (resetButton) {
+    resetButton.disabled = false; // Reset is always available
+    resetButton.style.opacity = '1';
   }
 }
 
@@ -72,20 +80,41 @@ function resetMetricsDisplay() {
 
     progressBars.forEach(id => {
       const element = getElement(id);
-      if (element) element.style.width = '0%';
+      if (element && element.style) element.style.width = '0%';
     });
 
     // Reset landmarks count
     const landmarksCount = getElement('landmarks-count');
-    if (landmarksCount) landmarksCount.textContent = '0/0';
+    if (landmarksCount) landmarksCount.textContent = '0/33';
 
     // Reset confidence score
     const confidenceScore = getElement('confidence-score');
     if (confidenceScore) confidenceScore.textContent = '0%';
 
+    // Reset frame rate
+    const frameRate = getElement('frame-rate');
+    if (frameRate) frameRate.textContent = '0 FPS';
+
     // Reset landmark table
     const landmarkTable = getElement('landmark-data');
     if (landmarkTable) landmarkTable.innerHTML = '';
+
+    // Reset insights displays
+    const insightElements = [
+      'posture-analysis',
+      'movement-analysis',
+      'recommendations'
+    ];
+    insightElements.forEach(id => {
+      const element = getElement(id);
+      if (element) {
+        if (id === 'recommendations') {
+          element.innerHTML = '<li>Start analysis to see recommendations...</li>';
+        } else {
+          element.textContent = 'Start analysis to see results...';
+        }
+      }
+    });
 
   } catch (error) {
     console.warn('Error resetting metrics display:', error);
@@ -109,13 +138,15 @@ function resetCharts() {
       });
     }
 
-    // Reinitialize charts if on dashboard page
-    const angleChart = getElement('angle-chart');
-    if (angleChart) {
+    // Reinitialize charts if on dashboard page (angle-chart exists)
+    const angleChartContainer = getElement('angle-chart');
+    if (angleChartContainer) {
       import('./chart_manager.js').then(module => {
-        if (module.initializeCharts) {
+        if (module && module.initializeCharts) {
           module.initializeCharts();
         }
+      }).catch(error => {
+        console.warn('Error reinitializing charts:', error);
       });
     }
 
@@ -127,82 +158,138 @@ function resetCharts() {
 // Handle start button click
 async function handleStart() {
   try {
-    if (isCameraActive()) return;
+    if (isCameraActive()) {
+      console.log('Camera is already active');
+      return;
+    }
 
-    console.log('Starting camera...');
+    console.log('Starting camera analysis...');
     
-    // Show loading state
+    // Initialize pose feature analysis before starting
+    initializePoseFeatureAnalysis();
+    
+    // Show loading state on buttons
+    const startButton = getElement('start-camera');
+    if (startButton) {
+      startButton.disabled = true;
+      startButton.textContent = 'Starting...';
+    }
+    
     updateButtonStates();
     
     // Hide camera overlay
     toggleCameraOverlay(false);
     
-    // Start camera
+    // Start camera and pose processing
     await startCamera();
     
-    // Start analysis timer with duration
+    // Start UI analysis timer (fallback if timeReportManager not available)
     if (window.timeReportManager) {
       window.timeReportManager.startAnalysisTimerWithDuration();
+    } else {
+      startAnalysisTimer();
     }
     
-    // Update button states
-    updateButtonStates();
+    // Update button states after start
+    setTimeout(() => {
+      if (startButton) {
+        startButton.textContent = 'Stop Analysis'; // Or original text
+      }
+      updateButtonStates();
+    }, 500);
     
-    console.log('Camera started successfully');
+    console.log('Camera analysis started successfully');
 
   } catch (error) {
-    console.error('Error starting camera:', error);
+    console.error('Error starting camera analysis:', error);
+    
+    // Revert button state on error
+    const startButton = getElement('start-camera');
+    if (startButton) {
+      startButton.disabled = false;
+      startButton.textContent = 'Start Analysis'; // Reset text
+    }
+    
     toggleCameraOverlay(true);
     updateButtonStates();
+    
+    // Show error overlay if available
+    const errorOverlay = getElement('camera-error');
+    if (errorOverlay) {
+      errorOverlay.style.display = 'block';
+      errorOverlay.textContent = `Failed to start: ${error.message}`;
+      setTimeout(() => {
+        errorOverlay.style.display = 'none';
+      }, 5000);
+    }
   }
 }
 
 // Handle stop button click
 function handleStop() {
   try {
-    if (!isCameraActive()) return;
+    if (!isCameraActive()) {
+      console.log('Camera is not active');
+      return;
+    }
 
-    console.log('Stopping camera...');
+    console.log('Stopping camera analysis...');
     
-    // Stop camera
+    // Stop camera processing
     stopCamera();
     
-    // Stop analysis timer
+    // Stop analysis timers
     if (window.timeReportManager) {
       window.timeReportManager.stopAnalysisTimer();
     }
     stopUITimer();
-    analysisTimer = null;
+    if (analysisTimer) {
+      clearInterval(analysisTimer);
+      analysisTimer = null;
+    }
     
     // Show camera overlay
     toggleCameraOverlay(true);
     
     // Update button states
+    const stopButton = getElement('stop-camera');
+    if (stopButton) {
+      stopButton.textContent = 'Stop Analysis'; // Reset if changed
+    }
     updateButtonStates();
     
-    console.log('Camera stopped successfully');
+    // Hide report button if shown
+    if (window.timeReportManager) {
+      window.timeReportManager.hideReportButton();
+    }
+    
+    console.log('Camera analysis stopped successfully');
 
   } catch (error) {
-    console.error('Error stopping camera:', error);
+    console.error('Error stopping camera analysis:', error);
+    updateButtonStates();
   }
 }
 
 // Handle reset button click
 function handleReset() {
   try {
-    console.log('Resetting data...');
+    console.log('Resetting all analysis data...');
     
     // Stop camera if running
     if (isCameraActive()) {
       handleStop();
     }
     
-    // Clear pose history
+    // Clear pose history from UI
     if (poseHistory && Array.isArray(poseHistory)) {
       poseHistory.length = 0;
     }
     
-    // Reset data in camera manager
+    // Reset pose feature data from pose_feature.js
+    resetPoseData();
+    
+    // Reset camera manager data
     resetData();
     
     // Hide report button
@@ -210,23 +297,56 @@ function handleReset() {
       window.timeReportManager.hideReportButton();
     }
     
-    // Reset UI displays
+    // Reset UI displays and metrics
     resetMetricsDisplay();
     resetCharts();
     
-    console.log('Data reset successfully');
+    // Clear any ongoing insights generation
+    if (analysisTimer) {
+      clearInterval(analysisTimer);
+      analysisTimer = null;
+    }
+    
+    // Reset timer display
+    const timerDisplay = getElement('analysis-timer');
+    if (timerDisplay) {
+      timerDisplay.textContent = '00:00';
+    }
+    
+    console.log('All analysis data reset successfully');
 
   } catch (error) {
-    console.error('Error resetting data:', error);
+    console.error('Error resetting analysis data:', error);
   }
 }
 
-// Handle capture frame (placeholder for future functionality)
+// Handle capture frame (placeholder for future functionality - e.g., save current frame data)
 function handleCapture() {
-  if (!isCameraActive()) return;
+  if (!isCameraActive()) {
+    console.log('Cannot capture: Camera not active');
+    return;
+  }
   
   try {
-    console.log('Capture frame functionality to be implemented');
+    console.log('Capturing current frame data...');
+    
+    // Example: Get current analysis data and log/save it
+    const currentAnalysis = generateInsights();
+    if (currentAnalysis) {
+      console.log('Captured Analysis:', currentAnalysis);
+      
+      // Optional: Show a success message or download data
+      const captureMsg = getElement('capture-message'); // Assume an element exists
+      if (captureMsg) {
+        captureMsg.style.display = 'block';
+        captureMsg.textContent = 'Frame captured and logged to console!';
+        setTimeout(() => {
+          captureMsg.style.display = 'none';
+        }, 3000);
+      }
+    } else {
+      console.log('No analysis data available for capture');
+    }
     
   } catch (error) {
     console.error('Error capturing frame:', error);
@@ -234,29 +354,70 @@ function handleCapture() {
 }
 
 // Initialize all button functionality
-function initializeButtons() {
+export function initializeButtons() {
   try {
-    // Get button references
-    const buttons = {
+    // Initialize pose feature analysis on app start
+    initializePoseFeatureAnalysis();
+    
+    // Critical buttons (always expected - log warnings if missing)
+    const criticalButtons = {
       'start-camera': handleStart,
       'stop-camera': handleStop,
       'reset-data': handleReset,
-      'capture-frame': handleCapture,
-      'overlay-start-btn': () => getElement('start-camera')?.click(),
+      'capture-frame': handleCapture
+    };
+
+    // Optional buttons (e.g., overlays, hero buttons - no warnings if missing)
+    const optionalButtons = {
+      'overlay-start-btn': () => {
+        const startBtn = getElement('start-camera');
+        if (startBtn) startBtn.click();
+      },
       'hero-analysis-btn': handleHeroAnalysis
     };
 
-    // Set up event listeners for existing buttons
-    Object.entries(buttons).forEach(([id, handler]) => {
+    // Initialize critical buttons
+    Object.entries(criticalButtons).forEach(([id, handler]) => {
       const button = getElement(id);
       if (button) {
-        button.addEventListener('click', handler);
-        console.log(`Button ${id} initialized`);
+        // Remove existing listeners to avoid duplicates
+        const newHandler = (e) => {
+          e.preventDefault();
+          handler();
+        };
+        button.removeEventListener('click', handler);
+        button.addEventListener('click', newHandler);
+        console.log(`Critical button ${id} initialized`);
+      } else {
+        console.warn(`Critical button element ${id} not found - this may break functionality`);
       }
+    });
+
+    // Initialize optional buttons (silently skip if not found)
+    Object.entries(optionalButtons).forEach(([id, handler]) => {
+      const button = getElement(id);
+      if (button) {
+        // Remove existing listeners to avoid duplicates
+        const newHandler = (e) => {
+          e.preventDefault();
+          handler();
+        };
+        button.removeEventListener('click', handler);
+        button.addEventListener('click', newHandler);
+        console.log(`Optional button ${id} initialized`);
+      }
+      // No warning - these may not exist in all layouts
     });
 
     // Set initial button states
     updateButtonStates();
+
+    // Optional: Start periodic insights generation if camera is active
+    if (isCameraActive()) {
+      analysisTimer = setInterval(() => {
+        generateInsights();
+      }, 3000);
+    }
 
     console.log('All buttons initialized successfully');
 
@@ -265,51 +426,64 @@ function initializeButtons() {
   }
 }
 
-// Handle hero analysis button click
+// Handle hero analysis button click (scroll to analysis section and start)
 function handleHeroAnalysis() {
   try {
     const analysisSection = getElement('analysis');
     if (analysisSection) {
       analysisSection.scrollIntoView({ behavior: 'smooth' });
+      // Delay start to allow scroll to complete
       setTimeout(() => {
         handleStart();
-      }, 1000);
+      }, 800);
     } else {
+      // If no section, just start
       handleStart();
     }
   } catch (error) {
-    console.error('Error handling hero analysis:', error);
+    console.error('Error handling hero analysis button:', error);
+    handleStart(); // Fallback to direct start
   }
 }
 
-// Handle page visibility change
+// Handle page visibility change (pause/resume camera)
 function handleVisibilityChange() {
   if (document.hidden && isCameraActive()) {
-    console.log('Page hidden, stopping camera to save resources');
+    console.log('Page hidden - pausing camera to save resources');
     handleStop();
+  } else if (!document.hidden && !isCameraActive()) {
+    console.log('Page visible - ready to resume');
+    // Optionally auto-resume, but for now just log
   }
 }
 
 // Initialize visibility change handler
-document.addEventListener('visibilitychange', handleVisibilityChange);
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+}
 
 // Cleanup on page unload
-window.addEventListener('beforeunload', () => {
-  if (isCameraActive()) {
-    handleStop();
-  }
-});
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', () => {
+    if (isCameraActive()) {
+      handleStop();
+    }
+    // Clear intervals
+    if (analysisTimer) {
+      clearInterval(analysisTimer);
+    }
+  });
+}
 
-// Get camera running state
-function getCameraState() {
+// Get camera running state (exported for external use)
+export function getCameraState() {
   return isCameraActive();
 }
 
+// Export key functions for external modules
 export {
-  initializeButtons,
   handleStart,
   handleStop,
   handleReset,
-  getCameraState,
   updateButtonStates
 };

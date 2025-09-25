@@ -1,5 +1,6 @@
 import { poseHistory, updateMetrics, updateLandmarkTable, updateSkeletonStatus, toggleSkeletonOverlay } from './ui.js';
 import { updateCharts } from './chart_manager.js';
+import { processPoseFrame, getCompleteAnalysisData, isAnalysisDurationComplete } from './pose_feature.js';
 
 // Constants
 const MAX_HISTORY = 100;
@@ -264,7 +265,14 @@ export function analyzePose(landmarks) {
   }
   
   try {
-    // Calculate key angles
+    // Process pose frame using pose_feature.js for comprehensive analysis
+    const poseFeatures = processPoseFrame(landmarks);
+    
+    if (!poseFeatures) {
+      return null;
+    }
+    
+    // Calculate key angles for basic UI display
     const angles = {
       leftElbow: calculateAngle(landmarks[11], landmarks[13], landmarks[15]),
       rightElbow: calculateAngle(landmarks[12], landmarks[14], landmarks[16]),
@@ -272,7 +280,7 @@ export function analyzePose(landmarks) {
       rightKnee: calculateAngle(landmarks[24], landmarks[26], landmarks[28])
     };
     
-    // Calculate metrics
+    // Calculate metrics for UI display
     const analysis = {
       angles: angles,
       symmetry: calculateSymmetry(angles.leftElbow, angles.rightElbow),
@@ -280,7 +288,9 @@ export function analyzePose(landmarks) {
       balance: calculateBalance(landmarks),
       motionQuality: calculateMotionQuality(),
       landmarks: landmarks,
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      // Include pose features for comprehensive analysis
+      poseFeatures: poseFeatures
     };
     
     return analysis;
@@ -328,6 +338,18 @@ export function onResultsPose(results) {
         // Update charts if available
         if (typeof updateCharts === 'function') {
           updateCharts(analysis);
+        }
+        
+        // Check if analysis duration is complete (fixed to use pose_feature.js function safely)
+        let duration = 30; // Default duration in seconds
+        if (window.timeReportManager && typeof window.timeReportManager.getAnalysisDuration === 'function') {
+          duration = window.timeReportManager.getAnalysisDuration();
+        }
+        if (isAnalysisDurationComplete(duration)) {
+          console.log('Analysis duration complete, stopping camera...');
+          if (typeof window.stopCameraAnalysis === 'function') {
+            window.stopCameraAnalysis();
+          }
         }
       }
     } else {
@@ -401,4 +423,14 @@ export function initializePose() {
 // Check if skeleton canvas exists on current page
 export function hasSkeletonCanvasElement() {
   return hasSkeletonCanvas;
+}
+
+// Get complete analysis data from pose_feature.js
+export function getCompletePoseAnalysisData() {
+  return getCompleteAnalysisData();
+}
+
+// Check if analysis duration is complete
+export function isPoseAnalysisDurationComplete(selectedDuration) {
+  return isAnalysisDurationComplete(selectedDuration);
 }

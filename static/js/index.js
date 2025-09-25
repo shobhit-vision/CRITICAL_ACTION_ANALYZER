@@ -1,4 +1,3 @@
-// index.js
 document.addEventListener('DOMContentLoaded', function() {
     const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
     const navLinks = document.querySelector('.nav-links');
@@ -114,7 +113,6 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeTimeReportManager();
 });
 
-
 // Time and Report Manager Logic ---------------------------------------------
 // Global variables for time and report management
 let analysisDuration = 5; // Default 5 seconds
@@ -146,7 +144,10 @@ function initializeTimeSelection() {
     // Add event listener for slider changes
     timeSlider.addEventListener('input', function() {
         analysisDuration = parseInt(this.value);
+        // Clamp duration to reasonable range (5-120 seconds)
+        analysisDuration = Math.max(5, Math.min(120, analysisDuration));
         updateTimeDisplay(analysisDuration, timeValue, timeDisplay);
+        console.log('Duration changed to:', analysisDuration, 'seconds');
     });
 
     console.log('Time selection initialized with duration:', analysisDuration);
@@ -232,20 +233,31 @@ function hideReportButton() {
 function startAnalysisTimerWithDuration() {
     if (analysisTimer) {
         clearTimeout(analysisTimer);
+        console.log('Cleared existing analysis timer');
     }
 
     analysisStartTime = Date.now();
-    console.log(`Analysis timer started for ${analysisDuration} seconds`);
+    // Set global start time for sync with other modules (e.g., pose_feature.js)
+    window.analysisStartTime = analysisStartTime;
+    console.log(`Analysis timer started for ${analysisDuration} seconds at ${new Date(analysisStartTime).toLocaleTimeString()}`);
 
     // Set timeout to automatically stop analysis after selected duration
     analysisTimer = setTimeout(() => {
+        console.log('Analysis timer expired - duration completed');
         if (window.isCameraActive && window.isCameraActive()) {
             console.log('Analysis duration completed - stopping camera');
             if (window.stopCameraAnalysis) {
                 window.stopCameraAnalysis();
+            } else {
+                console.warn('stopCameraAnalysis not available - manual stop required');
             }
         }
+        // Clear timer after firing
+        analysisTimer = null;
     }, analysisDuration * 1000);
+
+    // Show report button after starting analysis
+    showReportButton();
 
     return analysisTimer;
 }
@@ -255,12 +267,15 @@ function stopAnalysisTimer() {
     if (analysisTimer) {
         clearTimeout(analysisTimer);
         analysisTimer = null;
+        console.log('Analysis timer stopped manually');
     }
 
     if (analysisStartTime) {
         const elapsedTime = (Date.now() - analysisStartTime) / 1000;
         console.log(`Analysis stopped after ${elapsedTime.toFixed(1)} seconds`);
         analysisStartTime = null;
+        // Clear global start time
+        window.analysisStartTime = null;
     }
 }
 
@@ -283,7 +298,7 @@ function generateReport() {
         console.log('Report data stored successfully');
 
         // Navigate to report page
-        window.location.href = 'report.html';
+        window.location.href = '/report';
     } catch (error) {
         console.error('Error storing report data:', error);
         alert('Error generating report. Please try again.');
@@ -305,10 +320,23 @@ function collectReportData() {
     // Get pose history if available
     const poseData = window.poseHistory ? window.poseHistory.slice() : [];
 
+    // Get complete pose analysis data (structured JSON per second) - fixed to use correct global/method
+    let poseAnalysisData = {};
+    if (window.getCompletePoseAnalysisData) {
+        try {
+            poseAnalysisData = window.getCompletePoseAnalysisData();
+        } catch (error) {
+            console.warn('Error getting complete pose analysis data:', error);
+        }
+    } else if (window.poseAnalysisData) {
+        poseAnalysisData = window.poseAnalysisData;
+    }
+
     return {
         metrics: metrics,
         duration: durationInfo,
         poseData: poseData,
+        poseAnalysisData: poseAnalysisData,  // New: Include per-second JSON data
         insights: generateInsights()
     };
 }
@@ -374,14 +402,21 @@ function addTimeChangeAnimation() {
     }
 }
 
-// Make functions available globally for other modules
+// Make functions available globally for other modules (enhanced with missing methods)
 window.timeReportManager = {
     showReportButton,
     hideReportButton,
     startAnalysisTimerWithDuration,
     stopAnalysisTimer,
     getAnalysisDuration,
-    isAnalysisDataAvailable
+    isAnalysisDataAvailable,
+    collectReportData,  // Added: For stopCameraAnalysis to log data
+    getCompleteAnalysisData: () => {  // Added: Wrapper for pose data (calls getCompletePoseAnalysisData if available)
+        if (window.getCompletePoseAnalysisData) {
+            return window.getCompletePoseAnalysisData();
+        }
+        return window.poseAnalysisData || {};
+    }
 };
 
 // Initialize when DOM is loaded
